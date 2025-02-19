@@ -1,6 +1,7 @@
 package com.hipdev.LeaveManagement.controller;
 
 import com.hipdev.LeaveManagement.dto.Response;
+import com.hipdev.LeaveManagement.service.CustomUserDetailService;
 import com.hipdev.LeaveManagement.service.impl.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,10 @@ public class UserController {
     }
 
     @GetMapping("/get-by-id/{userId}")
+    @PreAuthorize("hasAnyAuthority(ADMIN,LEADER,MANAGER)")
     public ResponseEntity<Response> getUserById(@PathVariable("userId") String userId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
         Response response = userService.getUserById(userId);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }

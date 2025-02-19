@@ -170,7 +170,7 @@ public class UserService implements IUserService {
 
             List<User> userList = new ArrayList<>();
             if (existLeader.getRole().equals("LEADER")) {
-                 userList = userRepository.findUsersByLeaveId(existLeader.getId()).orElseThrow(
+                userList = userRepository.findUsersByLeaveId(existLeader.getId()).orElseThrow(
                         () -> new MyException("Leader dont ever have any users")
                 );
             }
@@ -195,50 +195,22 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public Response isLeaderOfUser(String userId, String leaderId) {
-        Response response = new Response();
+    public boolean isLeaderOrMangerOfUser(String userId, String username) {
 
         try {
             User existUser = userRepository.findById(Long.valueOf(userId))
                     .orElseThrow(() -> new MyException("User not found"));
-            User leader = userRepository.findById(Long.valueOf(leaderId))
+            User leader = userRepository.findByUsername(username)
                     .orElseThrow(() -> new MyException("Leader not found"));
-            if (!existUser.getLeader().equals(leader)) {
-                throw new MyException("Leader is not the leader of the user");
+            if (existUser.getLeader().equals(leader)) {
+                return true;
             }
-            response.setStatusCode(200);
-            response.setMessage("Success");
-        } catch (MyException e) {
-            response.setStatusCode(404);
-            response.setMessage(e.getMessage());
-        } catch (Exception e) {
-            response.setStatusCode(500);
-            response.setMessage("Error occured drung isLeaderOfUser: " + e.getMessage());
-        }
-        return response;
-    }
-
-    @Override
-    public Response isManagerOfUser(String userId, String managerId) {
-        Response response = new Response();
-
-        try {
-            User existUser = userRepository.findById(Long.valueOf(userId))
-                    .orElseThrow(() -> new MyException("User not found"));
-            User manager = userRepository.findById(Long.valueOf(managerId))
-                    .orElseThrow(() -> new MyException("Leader not found"));
-            if (!existUser.getDepartment().getManage().equals(manager)) {
-                throw new MyException("Manager is not the manager of the user");
+            if (existUser.getDepartment().getManage().equals(leader)) {
+                return true;
             }
-            response.setStatusCode(200);
-            response.setMessage("Success");
-        } catch (MyException e) {
-            response.setStatusCode(404);
-            response.setMessage(e.getMessage());
         } catch (Exception e) {
-            response.setStatusCode(500);
-            response.setMessage("Error occured drung isManagerOfUser: " + e.getMessage());
+            return false;
         }
-        return response;
+        return false;
     }
 }

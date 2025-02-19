@@ -18,7 +18,6 @@ public interface IUserService {
 
     Response getUserByRole(String username);
 
-    Response isLeaderOfUser(String userId, String leaderId);
+    boolean isLeaderOrMangerOfUser(String userId, String username);
 
-    Response isManagerOfUser(String userId, String managerId);
 }
