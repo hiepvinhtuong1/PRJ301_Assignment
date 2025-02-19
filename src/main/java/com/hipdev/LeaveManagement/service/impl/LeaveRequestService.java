@@ -109,6 +109,7 @@ public class LeaveRequestService implements ILeaveRequestService {
             );
 
             exsitedLeaveRequest.setStatus(updatedRequest.getStatus());
+            exsitedLeaveRequest.setComment(updatedRequest.getComment());
             exsitedLeaveRequest.setProcessor(processor);
 
             leaveRequestRepository.save(exsitedLeaveRequest);
@@ -119,14 +120,101 @@ public class LeaveRequestService implements ILeaveRequestService {
             response.setMessage(e.getMessage());
         }catch (Exception e){
             response.setStatusCode(500);
-            response.setMessage("Error saving a request: " + e.getMessage());
+            response.setMessage("Error processing a request: " + e.getMessage());
         }
         return response;
     }
 
     @Override
     public Response updateLeaveRequest(LeaveRequest updatedRequest, Long userId) {
-        return null;
+        Response response = new Response();
+
+        try {
+            var exsitedLeaveRequest = leaveRequestRepository.findById(updatedRequest.getId()).orElseThrow(
+                    () -> new MyException("Request not found")
+            );
+
+            var exsitUser = userRepository.findById(userId).orElseThrow(
+                    () -> new MyException("User not found")
+            );
+
+            if (exsitedLeaveRequest.getStatus().equals("Approved")) {
+                throw new MyException("Approved request cannot be updated");
+            }
+
+            if (exsitedLeaveRequest.getStatus().equals("Rejected")) {
+                throw new MyException("Rejected request cannot be updated");
+            }
+
+            if (exsitUser.getLeaveRequests() != null) {
+                if (!exsitUser.getLeaveRequests().contains(exsitedLeaveRequest)) {
+                    throw new MyException("User dont have the same leave request");
+                }
+
+                if (updatedRequest.getEndDate().isBefore(updatedRequest.getStartDate())) {
+                    throw new IllegalArgumentException("End date cannot be before start date");
+                }
+
+                exsitedLeaveRequest.setEndDate(updatedRequest.getEndDate());
+                exsitedLeaveRequest.setStartDate(updatedRequest.getStartDate());
+                exsitedLeaveRequest.setReason(updatedRequest.getReason());
+
+                leaveRequestRepository.save(exsitedLeaveRequest);
+                response.setStatusCode(200);
+                response.setMessage("success");
+            } else {
+                throw new MyException("User has never have leave request");
+            }
+        }catch (MyException e){
+            response.setStatusCode(400);
+            response.setMessage(e.getMessage());
+        }catch (Exception e){
+            response.setStatusCode(500);
+            response.setMessage("Error update a request: " + e.getMessage());
+        }
+        return response;
+    }
+
+    @Override
+    public Response deleteLeaveRequest(Long id, Long userId) {
+        Response response = new Response();
+
+        try {
+            var exsitedLeaveRequest = leaveRequestRepository.findById(id).orElseThrow(
+                    () -> new MyException("Request not found")
+            );
+
+            var exsitUser = userRepository.findById(userId).orElseThrow(
+                    () -> new MyException("User not found")
+            );
+
+            if (exsitedLeaveRequest.getStatus().equals("Approved")) {
+                throw new MyException("Approved request cannot be deleted");
+            }
+
+            if (exsitedLeaveRequest.getStatus().equals("Rejected")) {
+                throw new MyException("Rejected request cannot be deleted");
+            }
+
+            if (exsitUser.getLeaveRequests() != null) {
+                if (!exsitUser.getLeaveRequests().contains(exsitedLeaveRequest)) {
+                    throw new MyException("User dont have the same leave request");
+                }
+
+                leaveRequestRepository.delete(exsitedLeaveRequest);
+                response.setStatusCode(200);
+                response.setMessage("success");
+            } else {
+                throw new MyException("User has never have leave request");
+            }
+        }catch (MyException e){
+            response.setStatusCode(400);
+            response.setMessage(e.getMessage());
+        }catch (Exception e){
+            response.setStatusCode(500);
+            response.setMessage("Error delete a request: " + e.getMessage());
+        }
+        return response;
     }
 
 }

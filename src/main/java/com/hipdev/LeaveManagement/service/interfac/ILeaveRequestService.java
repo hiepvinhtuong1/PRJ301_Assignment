@@ -14,4 +14,6 @@ public interface ILeaveRequestService {
     Response processRequest(LeaveRequest updatedRequest, Long processerId);
 
     Response updateLeaveRequest(LeaveRequest updatedRequest, Long userId);
+
+    Response deleteLeaveRequest(Long id, Long userId);
 }
