@@ -35,9 +35,9 @@ public class User implements UserDetails {
     @JoinColumn(name = "leader_id", referencedColumnName = "id", unique = true)
     private User leader;
 
-    @ManyToOne
-    @JoinColumn(name = "department_id", nullable = false)
-    private Department department;
+//    @ManyToOne
+//    @JoinColumn(name = "department_id", nullable = true)
+//    private Department department;
 
     @OneToMany(mappedBy = "creator"
             , cascade = CascadeType.ALL, orphanRemoval = true

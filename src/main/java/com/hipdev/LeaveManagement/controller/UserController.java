@@ -1,6 +1,7 @@
 package com.hipdev.LeaveManagement.controller;
 
 import com.hipdev.LeaveManagement.dto.Response;
+import com.hipdev.LeaveManagement.entity.User;
 import com.hipdev.LeaveManagement.service.CustomUserDetailService;
 import com.hipdev.LeaveManagement.service.impl.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,12 @@ public class UserController {
     public ResponseEntity<Response> getUserById(@PathVariable("userId") String userId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
+        if (!userService.isLeaderOrMangerOfUser(userId, username)) {
+            Response response = new Response();
+            response.setStatusCode(403);
+            response.setMessage("You are not the leader or master of the user");
+            return ResponseEntity.status(response.getStatusCode()).body(response);
+        }
         Response response = userService.getUserById(userId);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -44,13 +51,31 @@ public class UserController {
     }
 
     @DeleteMapping("/delete/{userId}")
+    @PreAuthorize("hasAnyAuthority(ADMIN,MANAGER,LEADER)")
     public ResponseEntity<Response> deleteUser(@PathVariable("userId") String userId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        if (!userService.isLeaderOrMangerOfUser(userId, username)) {
+            Response response = new Response();
+            response.setStatusCode(403);
+            response.setMessage("You are not the leader or master of the user");
+            return ResponseEntity.status(response.getStatusCode()).body(response);
+        }
         Response response = userService.deleteUser(userId);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @GetMapping("/get-user-request/{userId}")
-    public ResponseEntity<Response> getUserRequest(@PathVariable("userId") String userId) {
+    @PreAuthorize("hasAnyAuthority(ADMIN,MANAGER,LEADER)")
+    public ResponseEntity<Response> getUserRequestHistory(@PathVariable("userId") String userId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        if (!userService.isLeaderOrMangerOfUser(userId, username)) {
+            Response response = new Response();
+            response.setStatusCode(403);
+            response.setMessage("You are not the leader or master of the user");
+            return ResponseEntity.status(response.getStatusCode()).body(response);
+        }
         Response response = userService.getUserRequestHistory(userId);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }

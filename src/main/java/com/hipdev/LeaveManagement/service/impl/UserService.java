@@ -14,6 +14,7 @@ import com.hipdev.LeaveManagement.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,7 +23,10 @@ import java.util.List;
 @Service
 public class UserService implements IUserService {
 
+    @Autowired
     private JWTUtils jwtUtils;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private UserRepository userRepository;
@@ -32,8 +36,35 @@ public class UserService implements IUserService {
 
     @Autowired
     private LeaveRequestRepository leaveRequestRepository;
+
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Override
+    public Response register(User user) {
+        Response response = new Response();
+        try {
+            if (user.getRole() == null || user.getRole().isBlank()) {
+                user.setRole("USER");
+            }
+            if (userRepository.existsByUsername(user.getUsername())) {
+                throw new MyException(user.getUsername() + "Already Exists");
+            }
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            User savedUser = userRepository.save(user);
+            UserDTO userDTO = Utils.mapUserEntityToDTO(savedUser);
+            response.setStatusCode(200);
+            response.setUser(userDTO);
+        } catch (MyException e) {
+            response.setStatusCode(400);
+            response.setMessage(e.getMessage());
+        } catch (Exception e) {
+            response.setStatusCode(500);
+            response.setMessage("Error Occurred During USer Registration " + e.getMessage());
+
+        }
+        return response;
+    }
 
     @Override
     public Response login(LoginRequest loginRequest) {
@@ -170,13 +201,13 @@ public class UserService implements IUserService {
 
             List<User> userList = new ArrayList<>();
             if (existLeader.getRole().equals("LEADER")) {
-                userList = userRepository.findUsersByLeaveId(existLeader.getId()).orElseThrow(
+                userList = userRepository.findUsersByLeader(existLeader).orElseThrow(
                         () -> new MyException("Leader dont ever have any users")
                 );
             }
 
             if (existLeader.getRole().equals("MANAGER")) {
-                userList = userRepository.findUsersByDepartmentId(existLeader.getDepartment().getId())
+                userList = userRepository.findUsersByLeader(existLeader)
                         .orElseThrow(() -> new MyException("Manager dont ever have any users"));
             }
 
@@ -205,9 +236,9 @@ public class UserService implements IUserService {
             if (existUser.getLeader().equals(leader)) {
                 return true;
             }
-            if (existUser.getDepartment().getManage().equals(leader)) {
-                return true;
-            }
+//            if (existUser.getDepartment().getManage().equals(leader)) {
+//                return true;
+//            }
         } catch (Exception e) {
             return false;
         }

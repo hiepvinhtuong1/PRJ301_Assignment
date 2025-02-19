@@ -2,8 +2,11 @@ package com.hipdev.LeaveManagement.service.interfac;
 
 import com.hipdev.LeaveManagement.dto.LoginRequest;
 import com.hipdev.LeaveManagement.dto.Response;
+import com.hipdev.LeaveManagement.entity.User;
 
 public interface IUserService {
+    Response register(User user);
+
     Response login(LoginRequest loginRequest);
 
     Response getAllUsers();

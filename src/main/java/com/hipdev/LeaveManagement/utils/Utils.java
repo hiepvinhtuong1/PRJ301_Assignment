@@ -24,7 +24,7 @@ public class Utils {
         userDTO.setId(user.getId());
         userDTO.setUsername(user.getUsername());
         userDTO.setFullName(user.getFullName());
-        userDTO.setDepartment(mapDepartmentEntityToDTO(user.getDepartment()));
+//        userDTO.setDepartment(mapDepartmentEntityToDTO(user.getDepartment()));
         userDTO.setRole(user.getRole());
         return userDTO;
     }
@@ -47,7 +47,7 @@ public class Utils {
         userDTO.setId(user.getId());
         userDTO.setUsername(user.getUsername());
         userDTO.setFullName(user.getFullName());
-        userDTO.setDepartment(mapDepartmentEntityToDTO(user.getDepartment()));
+//        userDTO.setDepartment(mapDepartmentEntityToDTO(user.getDepartment()));
         userDTO.setRole(user.getRole());
 
         if (!user.getLeaveRequests().isEmpty()) {

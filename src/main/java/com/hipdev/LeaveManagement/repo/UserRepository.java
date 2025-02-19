@@ -1,6 +1,8 @@
 package com.hipdev.LeaveManagement.repo;
 
+import com.hipdev.LeaveManagement.entity.Department;
 import com.hipdev.LeaveManagement.entity.User;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,11 +12,11 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    boolean existsByUsername(String username);
 
     Optional<User> findByUsername(String username);
 
-    Optional<List<User>> findUsersByLeaveId(Long leaveId);
+    Optional<List<User>> findUsersByLeader(User leader);
 
-    Optional<List<User>> findUsersByDepartmentId(Long departmentId);
+
+    boolean existsByUsername(@NotBlank(message = "Username is required") String username);
 }
