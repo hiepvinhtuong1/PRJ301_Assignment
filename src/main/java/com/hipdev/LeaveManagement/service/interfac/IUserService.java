@@ -14,4 +14,11 @@ public interface IUserService {
 
     Response getMyInfo(String username);
 
+    Response deleteUser(String userId);
+
+    Response getUserByRole(String username);
+
+    Response isLeaderOfUser(String userId, String leaderId);
+
+    Response isManagerOfUser(String userId, String managerId);
 }
