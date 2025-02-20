@@ -17,6 +17,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<List<User>> findUsersByLeader(User leader);
 
+    Optional<List<User>> findUsersByDepartment(Department department);
 
     boolean existsByUsername(@NotBlank(message = "Username is required") String username);
 }

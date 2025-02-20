@@ -16,10 +16,10 @@ public class Department {
 
     private String name;
 
-//    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<User> users;
+    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<User> users;
 
-//    @OneToOne
-//    @JoinColumn(name = "manage_id", referencedColumnName = "id", unique = true)
-//    private User manage;
+    @OneToOne
+    @JoinColumn(name = "manage_id", referencedColumnName = "id", unique = true)
+    private User manage;
 }

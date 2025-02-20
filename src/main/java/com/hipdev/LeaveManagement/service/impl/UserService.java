@@ -226,6 +226,37 @@ public class UserService implements IUserService {
     }
 
     @Override
+    public Response getUsersByRole(String username) {
+        Response response = new Response();
+
+        try {
+            var existUser = userRepository.findByUsername(username).orElseThrow(() -> new MyException("User not found"));
+            List<User> userList = new ArrayList<>();
+            if (existUser.getRole().equals("LEADER")) {
+                userList = userRepository.findUsersByLeader(existUser).orElseThrow(
+                        ()-> new MyException("Leader dont ever have any users")
+                );
+            }
+            if (existUser.getRole().equals("MANAGER")) {
+                userList = userRepository.findUsersByDepartment(existUser.getDepartment()).orElseThrow(
+                        ()-> new MyException("Manager dont ever have any users")
+                );
+            }
+            List<UserDTO> userDTOs = Utils.mapUserListEntityToListDTO(userList);
+            response.setStatusCode(200);
+            response.setMessage("Success");
+            response.setUsers(userDTOs);
+        } catch (MyException e) {
+            response.setStatusCode(400);
+            response.setMessage(e.getMessage());
+        } catch (Exception e) {
+            response.setStatusCode(500);
+            response.setMessage("Error occured drung user's getAllUsers: " + e.getMessage());
+        }
+        return response;
+    }
+
+    @Override
     public boolean isLeaderOrMangerOfUser(String userId, String username) {
 
         try {
@@ -233,12 +264,15 @@ public class UserService implements IUserService {
                     .orElseThrow(() -> new MyException("User not found"));
             User leader = userRepository.findByUsername(username)
                     .orElseThrow(() -> new MyException("Leader not found"));
-            if (existUser.getLeader().equals(leader)) {
+            if (existUser.getLeader().equals(leader) ) {
                 return true;
             }
-//            if (existUser.getDepartment().getManage().equals(leader)) {
-//                return true;
-//            }
+            if (existUser.getDepartment().getManage().equals(leader) ) {
+                return true;
+            }
+            if (existUser.equals(leader)) {
+                return true;
+            }
         } catch (Exception e) {
             return false;
         }

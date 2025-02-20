@@ -21,14 +21,14 @@ public class UserController {
     private UserService userService;
 
     @GetMapping("/all")
-    @PreAuthorize("hasAnyAuthority(ADMIN)")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Response> getAllUsers() {
         Response response = userService.getAllUsers();
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @GetMapping("/get-by-id/{userId}")
-    @PreAuthorize("hasAnyAuthority(ADMIN,LEADER,MANAGER)")
+    @PreAuthorize("hasAnyAuthority('ADMIN','LEADER','MANAGER')")
     public ResponseEntity<Response> getUserById(@PathVariable("userId") String userId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
@@ -42,7 +42,7 @@ public class UserController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
-    @GetMapping("/get-my-info/")
+    @GetMapping("/get-my-info")
     public ResponseEntity<Response> getMyInfo() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
@@ -80,4 +80,13 @@ public class UserController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
+
+    @GetMapping("/get-users-by-role")
+    @PreAuthorize("hasAnyAuthority('ADMIN','LEADER','MANAGER')")
+    public ResponseEntity<Response> getUsersByRole() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Response response = userService.getUserByRole(username);
+        return ResponseEntity.status(response.getStatusCode()).body(response);
+    }
 }

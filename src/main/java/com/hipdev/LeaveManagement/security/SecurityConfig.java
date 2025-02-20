@@ -38,7 +38,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable) // Tắt CSRF (Không cần thiết khi dùng JWT)
                 .cors(Customizer.withDefaults()) // Cho phép CORS với cấu hình mặc định
                 .authorizeRequests(request -> request
-                        .requestMatchers("/auth/**", "/deparment", "leave-request").permitAll() // Các URL này không cần xác thực
+                        .requestMatchers("/auth/**", "/deparments", "leave-requests/**").permitAll() // Các URL này không cần xác thực
                         .anyRequest().authenticated()) // Mọi request khác cần xác thực
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Không sử dụng session (Dùng JWT thay thế)
                 .authenticationProvider(authenticationProvider()) // Đăng ký provider xác thực
