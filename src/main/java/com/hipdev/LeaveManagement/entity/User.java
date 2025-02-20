@@ -31,18 +31,23 @@ public class User implements UserDetails {
 
     private String role;
 
-    @OneToOne
-    @JoinColumn(name = "leader_id", referencedColumnName = "id", unique = true)
+    @ManyToOne
+    @JoinColumn(name = "leader_id", referencedColumnName = "id")
     private User leader;
 
     @ManyToOne
-    @JoinColumn(name = "department_id", nullable = false)
+    @JoinColumn(name = "department_id", nullable = true)
     private Department department;
 
     @OneToMany(mappedBy = "creator"
             , cascade = CascadeType.ALL, orphanRemoval = true
             , fetch = FetchType.LAZY)
     private List<LeaveRequest> leaveRequests = new ArrayList<>();
+
+    @OneToMany(mappedBy = "processor"
+            , cascade = CascadeType.ALL, orphanRemoval = true
+            , fetch = FetchType.LAZY)
+    private List<LeaveRequest> processRequests = new ArrayList<>();
 
     @Override
     public String getUsername() {

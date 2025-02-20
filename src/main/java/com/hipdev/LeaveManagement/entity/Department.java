@@ -18,4 +18,8 @@ public class Department {
 
     @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<User> users;
+
+    @OneToOne
+    @JoinColumn(name = "manage_id", referencedColumnName = "id", unique = true)
+    private User manage;
 }

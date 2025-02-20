@@ -25,7 +25,6 @@ public class LeaveRequest {
     @NotNull(message = "End date must be in the future")
     private LocalDate endDate;
 
-    @NotNull(message = "Status is required")
     private String status;
 
     private String comment;
@@ -34,7 +33,7 @@ public class LeaveRequest {
     @JoinColumn(name = "creator_id")
     private User creator;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "processor_id")
     private User processor;
 }

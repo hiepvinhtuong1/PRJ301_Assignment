@@ -14,6 +14,7 @@ import com.hipdev.LeaveManagement.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,7 +23,10 @@ import java.util.List;
 @Service
 public class UserService implements IUserService {
 
+    @Autowired
     private JWTUtils jwtUtils;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private UserRepository userRepository;
@@ -32,8 +36,35 @@ public class UserService implements IUserService {
 
     @Autowired
     private LeaveRequestRepository leaveRequestRepository;
+
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Override
+    public Response register(User user) {
+        Response response = new Response();
+        try {
+            if (user.getRole() == null || user.getRole().isBlank()) {
+                user.setRole("USER");
+            }
+            if (userRepository.existsByUsername(user.getUsername())) {
+                throw new MyException(user.getUsername() + "Already Exists");
+            }
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            User savedUser = userRepository.save(user);
+            UserDTO userDTO = Utils.mapUserEntityToDTO(savedUser);
+            response.setStatusCode(200);
+            response.setUser(userDTO);
+        } catch (MyException e) {
+            response.setStatusCode(400);
+            response.setMessage(e.getMessage());
+        } catch (Exception e) {
+            response.setStatusCode(500);
+            response.setMessage("Error Occurred During USer Registration " + e.getMessage());
+
+        }
+        return response;
+    }
 
     @Override
     public Response login(LoginRequest loginRequest) {
@@ -138,5 +169,113 @@ public class UserService implements IUserService {
             response.setMessage("Error occured drung user's getUserById: " + e.getMessage());
         }
         return response;
+    }
+
+    @Override
+    public Response deleteUser(String userId) {
+        Response response = new Response();
+
+        try {
+            User existUser = userRepository.findById(Long.valueOf(userId))
+                    .orElseThrow(() -> new MyException("User not found"));
+            userRepository.delete(existUser);
+            response.setStatusCode(200);
+            response.setMessage("Success");
+        } catch (MyException e) {
+            response.setStatusCode(404);
+            response.setMessage(e.getMessage());
+        } catch (Exception e) {
+            response.setStatusCode(500);
+            response.setMessage("Error occured drung user's getUserById: " + e.getMessage());
+        }
+        return response;
+    }
+
+    @Override
+    public Response getUserByRole(String username) {
+        Response response = new Response();
+
+        try {
+            User existLeader = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new MyException("Leader not found"));
+
+            List<User> userList = new ArrayList<>();
+            if (existLeader.getRole().equals("LEADER")) {
+                userList = userRepository.findUsersByLeader(existLeader).orElseThrow(
+                        () -> new MyException("Leader dont ever have any users")
+                );
+            }
+
+            if (existLeader.getRole().equals("MANAGER")) {
+                userList = userRepository.findUsersByLeader(existLeader)
+                        .orElseThrow(() -> new MyException("Manager dont ever have any users"));
+            }
+
+            List<UserDTO> userDTOList = Utils.mapUserListEntityToListDTO(userList);
+            response.setStatusCode(200);
+            response.setMessage("Success");
+            response.setUsers(userDTOList);
+        } catch (MyException e) {
+            response.setStatusCode(404);
+            response.setMessage(e.getMessage());
+        } catch (Exception e) {
+            response.setStatusCode(500);
+            response.setMessage("Error occured drung user's getUserById: " + e.getMessage());
+        }
+        return response;
+    }
+
+    @Override
+    public Response getUsersByRole(String username) {
+        Response response = new Response();
+
+        try {
+            var existUser = userRepository.findByUsername(username).orElseThrow(() -> new MyException("User not found"));
+            List<User> userList = new ArrayList<>();
+            if (existUser.getRole().equals("LEADER")) {
+                userList = userRepository.findUsersByLeader(existUser).orElseThrow(
+                        ()-> new MyException("Leader dont ever have any users")
+                );
+            }
+            if (existUser.getRole().equals("MANAGER")) {
+                userList = userRepository.findUsersByDepartment(existUser.getDepartment()).orElseThrow(
+                        ()-> new MyException("Manager dont ever have any users")
+                );
+            }
+            List<UserDTO> userDTOs = Utils.mapUserListEntityToListDTO(userList);
+            response.setStatusCode(200);
+            response.setMessage("Success");
+            response.setUsers(userDTOs);
+        } catch (MyException e) {
+            response.setStatusCode(400);
+            response.setMessage(e.getMessage());
+        } catch (Exception e) {
+            response.setStatusCode(500);
+            response.setMessage("Error occured drung user's getAllUsers: " + e.getMessage());
+        }
+        return response;
+    }
+
+    @Override
+    public boolean isLeaderOrMangerOfUser(String userId, String username) {
+
+        try {
+            User existUser = userRepository.findById(Long.valueOf(userId))
+                    .orElseThrow(() -> new MyException("User not found"));
+            User leader = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new MyException("Leader not found"));
+            if (existUser.getLeader().equals(leader) ) {
+                return true;
+            }
+            if (existUser.getDepartment().getManage().equals(leader) ) {
+                return true;
+            }
+            if (existUser.equals(leader)) {
+                return true;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
     }
 }

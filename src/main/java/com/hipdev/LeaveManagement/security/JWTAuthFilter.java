@@ -1,5 +1,6 @@
 package com.hipdev.LeaveManagement.security;
 
+import com.hipdev.LeaveManagement.service.CustomUserDetailService;
 import com.hipdev.LeaveManagement.utils.JWTUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,7 +24,8 @@ public class JWTAuthFilter extends OncePerRequestFilter { // Kế thừa OncePer
     @Autowired
     private JWTUtils jwtUtils; // Inject class JWTUtils để xử lý JWT
 
-    private CachingUserDetailsService cachingUserDetailsService; // Lấy thông tin user từ cache
+    @Autowired
+    private CustomUserDetailService customUserDetailService; // Lấy thông tin user từ cache
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -43,7 +45,7 @@ public class JWTAuthFilter extends OncePerRequestFilter { // Kế thừa OncePer
 
         // Kiểm tra nếu username có trong token và chưa có authentication nào trong SecurityContextHolder
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = cachingUserDetailsService.loadUserByUsername(username); // Load user từ database/cache
+            UserDetails userDetails = customUserDetailService.loadUserByUsername(username); // Load user từ database/cache
             if (jwtUtils.isValidToken(jwtToken, userDetails)) { // Kiểm tra xem token có hợp lệ không
                 SecurityContext securityContext = SecurityContextHolder.createEmptyContext(); // Tạo SecurityContext mới
                 UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(

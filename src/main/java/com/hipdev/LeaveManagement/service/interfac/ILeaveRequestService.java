@@ -9,5 +9,11 @@ public interface ILeaveRequestService {
 
     Response getAllRequests();
 
-    Response processRequest(Long id);
+    Response getLeaveRequestById(Long requestId, Long currentUserId);
+
+    Response processRequest(LeaveRequest updatedRequest, Long processerId, Long requestId);
+
+    Response updateLeaveRequest(LeaveRequest updatedRequest, Long userId, Long requestId);
+
+    Response deleteLeaveRequest(Long id, Long userId);
 }

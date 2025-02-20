@@ -16,6 +16,7 @@ public class Response {
     private String expirationTime;
     private UserDTO user;
     private DepartmentDTO department;
+    private LeaveRequestDTO leaveRequest;
     private List<UserDTO> users;
     private List<LeaveRequestDTO> leaveRequests;
     private List<DepartmentDTO> departments;
