@@ -2,25 +2,30 @@ package com.hipdev.LeaveManagement.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-@Data
 @Entity
+@Data
 @Table(name = "users")
-public class User implements UserDetails {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int id;
 
     @Column(unique = true, nullable = false)
-    @NotBlank(message = "Username is required")
+    @NotBlank(message = "Username is requried")
     private String username;
 
     @NotBlank(message = "Password is required")
@@ -29,15 +34,13 @@ public class User implements UserDetails {
     @NotBlank(message = "FullName is required")
     private String fullName;
 
-    private String role;
+    @ManyToOne
+    @JoinColumn(name = "department_id", nullable = true)
+    private Department department;
 
     @ManyToOne
     @JoinColumn(name = "leader_id", referencedColumnName = "id")
     private User leader;
-
-    @ManyToOne
-    @JoinColumn(name = "department_id", nullable = true)
-    private Department department;
 
     @OneToMany(mappedBy = "creator"
             , cascade = CascadeType.ALL, orphanRemoval = true
@@ -49,38 +52,7 @@ public class User implements UserDetails {
             , fetch = FetchType.LAZY)
     private List<LeaveRequest> processRequests = new ArrayList<>();
 
-    @Override
-    public String getUsername() {
-        return username;
-    }
+    @ManyToMany
+    Set<Role> roles = new HashSet<>();
 
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role));
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
 }
