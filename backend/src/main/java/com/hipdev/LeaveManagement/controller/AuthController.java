@@ -27,9 +27,5 @@ public class AuthController {
         Response response = userService.login(loginRequest);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
-
-    @PostMapping("/test")
-    public String test() {
-        return "test";
-    }
+    
 }

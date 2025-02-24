@@ -1,5 +1,6 @@
 package com.hipdev.LeaveManagement.service.impl;
 
+import com.hipdev.LeaveManagement.dto.LeaveRequestDTO;
 import com.hipdev.LeaveManagement.dto.LoginRequest;
 import com.hipdev.LeaveManagement.dto.Response;
 import com.hipdev.LeaveManagement.dto.UserDTO;
@@ -158,9 +159,11 @@ public class UserService implements IUserService {
         try {
             User user = userRepository.findByUsername(username).orElseThrow(() -> new MyException("User not found"));
             UserDTO userDTO = Utils.mapUserEntityToDTO(user);
+            List<LeaveRequestDTO> leaveRequestDTOList = Utils.mapRequestListEntityToListDTO(user.getLeaveRequests());
             response.setStatusCode(200);
             response.setMessage("Success");
             response.setUser(userDTO);
+            response.setLeaveRequests(leaveRequestDTOList);
         } catch (MyException e) {
             response.setStatusCode(404);
             response.setMessage(e.getMessage());
