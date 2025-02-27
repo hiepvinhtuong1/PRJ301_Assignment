@@ -14,6 +14,7 @@ public class UserDTO {
     private String fullname;
     private DepartmentDTO department;
     private UserDTO leader;
+    private List<RoleDTO> roles;
     private List<LeaveRequestDTO> leaveRequests;
     private List<LeaveRequestDTO> processedLeaveRequests;
 }

@@ -1,39 +1,47 @@
 package com.hipdev.LeaveManagement.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
 @Entity
-@Data
 @Table(name = "leave_requests")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class LeaveRequest {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
-    @NotBlank(message = "Reason is requried")
-    private String reason;
-
-    @NotNull(message = "Start date is required")
+    @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
-    @NotNull(message = "End date must be in the future")
+    @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    private String status;
+    @Column(nullable = false, length = 255)
+    private String reason;
 
+    @Column(columnDefinition = "TEXT")
     private String comment;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "creator_id")
+    @ManyToOne
+    @JoinColumn(name = "creator_id", nullable = false) // Người tạo request
     private User creator;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "processor_id")
+    @ManyToOne
+    @JoinColumn(name = "processor_id") // Người xử lý request, có thể NULL
     private User processor;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status = Status.Pending;
+
+    public enum Status {
+        Pending, Approved, Rejected
+    }
 }

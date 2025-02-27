@@ -17,7 +17,6 @@ import java.util.List;
 public class Department {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String name;
@@ -26,6 +25,6 @@ public class Department {
     private List<User> users;
 
     @OneToOne
-    @JoinColumn(name = "manage_id", referencedColumnName = "id", unique = true)
-    private User manage;
+    @JoinColumn(name = "manage_id", referencedColumnName = "userId", unique = true)
+    private User manager;
 }

@@ -1,25 +1,32 @@
 package com.hipdev.LeaveManagement.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToMany;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
+@Entity
+@Table(name = "roles")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@Entity
 public class Role {
     @Id
-    private String name;
+    private String roleName; // name làm ID
+
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @ManyToMany
-    private Set<Permission> permissions = new HashSet<>();
-}
+    @ManyToMany(mappedBy = "roles")
+    private List<User> users; // 1 Role có thể thuộc nhiều User
 
+    @ManyToMany
+    @JoinTable(
+            name = "role_permissions",
+            joinColumns = @JoinColumn(name = "role_name"),
+            inverseJoinColumns = @JoinColumn(name = "permission_name")
+    ) // 1 Role có nhiều Permission
+    private List<Permission> permissions;
+}
