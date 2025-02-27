@@ -5,8 +5,7 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DepartmentDTO {
-    private Long id;
+public class PermissionDTO {
     private String name;
-    private UserDTO manager;
+    private String description;
 }
