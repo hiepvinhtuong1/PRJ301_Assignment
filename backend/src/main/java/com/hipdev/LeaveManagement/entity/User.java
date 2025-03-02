@@ -38,7 +38,7 @@ public class User {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @ManyToOne
-    @JoinColumn(name = "department_id", nullable = false) // 1 User thuộc 1 Department
+    @JoinColumn(name = "department_id") // 1 User thuộc 1 Department
     private Department department;
 
     @OneToOne(mappedBy = "manager", cascade = CascadeType.ALL) // 1 User làm manager của 1 Department
