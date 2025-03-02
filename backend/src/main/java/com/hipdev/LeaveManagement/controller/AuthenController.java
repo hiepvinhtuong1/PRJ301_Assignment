@@ -1,8 +1,6 @@
 package com.hipdev.LeaveManagement.controller;
 
-import com.hipdev.LeaveManagement.dto.request.AuthenticationRequest;
-import com.hipdev.LeaveManagement.dto.request.IntrospectRequest;
-import com.hipdev.LeaveManagement.dto.request.RegisterRequest;
+import com.hipdev.LeaveManagement.dto.request.*;
 import com.hipdev.LeaveManagement.dto.response.ApiResponse;
 import com.hipdev.LeaveManagement.dto.response.AuthenticationResponse;
 import com.hipdev.LeaveManagement.dto.response.IntrospectResponse;
@@ -47,5 +45,19 @@ public class AuthenController {
         return ApiResponse.<IntrospectResponse>builder()
                 .data(result)
                 .build();
+    }
+
+    @PostMapping("/refresh")
+    ApiResponse<AuthenticationResponse> refreshToken(@RequestBody RefreshRequest request) throws ParseException, JOSEException {
+        var result = authenticationService.refresh(request);
+        return ApiResponse.<AuthenticationResponse>builder()
+                .data(result)
+                .build();
+    }
+
+    @PostMapping("/logout")
+    ApiResponse<Void> logout(@RequestBody LogoutRequest request) throws ParseException, JOSEException {
+        authenticationService.logout(request);
+        return ApiResponse.<Void>builder().build();
     }
 }
