@@ -22,9 +22,9 @@ public class Department {
     private String name;
 
     @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<User> users;
+    private List<Employee> employees;
 
     @OneToOne
-    @JoinColumn(name = "manage_id", referencedColumnName = "userId", unique = true)
-    private User manager;
+    @JoinColumn(name = "manage_id", referencedColumnName = "department_id", unique = true)
+    private Employee manager;
 }

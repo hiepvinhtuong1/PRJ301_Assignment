@@ -15,7 +15,7 @@ import java.time.LocalDate;
 public class LeaveRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -31,11 +31,11 @@ public class LeaveRequest {
 
     @ManyToOne
     @JoinColumn(name = "creator_id", nullable = false) // Người tạo request
-    private User creator;
+    private Employee creator;
 
     @ManyToOne
     @JoinColumn(name = "processor_id") // Người xử lý request, có thể NULL
-    private User processor;
+    private Employee processor;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

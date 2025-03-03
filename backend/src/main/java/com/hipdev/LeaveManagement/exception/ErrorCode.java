@@ -11,6 +11,8 @@ public enum ErrorCode {
     UNAUTHENTICATED(1002, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     USER_NOT_EXISTED(1003, "User not exsited", HttpStatus.NOT_FOUND),
     USER_EXISTED(1004, "User is already taken", HttpStatus.BAD_REQUEST),
+    LEAVEREQUEST_NOT_FOUND(1005, "Leave Request Not Found", HttpStatus.BAD_REQUEST),
+    LEAVEREQUEST_EXISTED(1006, "Leave Request Already Existed", HttpStatus.BAD_REQUEST);
     ;
     final private int code;
     final private String message;
