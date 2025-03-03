@@ -44,11 +44,9 @@ import java.util.UUID;
 public class AuthenticationSerivceImpl implements AuthenticationService {
 
     // Inject repository for invalidated tokens and user data
-    @Autowired
-    InvalidatedTokenRepository invalidatedTokenRepository;
+    final InvalidatedTokenRepository invalidatedTokenRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    final UserRepository userRepository;
 
     // Configuration values for JWT signing and durations
     @NonFinal
