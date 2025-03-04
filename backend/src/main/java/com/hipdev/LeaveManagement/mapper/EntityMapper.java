@@ -18,9 +18,9 @@ public interface EntityMapper<D,E> {
 
     E toEntity(D dto);
 
-    List<D> toDto(List<E> entities);
+    List<D> toDtos(List<E> entities);
 
-    List<E> toEntity(List<D> dtos);
+    List<E> toEntitys(List<D> dtos);
 
     @Named("partialUpdate")
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

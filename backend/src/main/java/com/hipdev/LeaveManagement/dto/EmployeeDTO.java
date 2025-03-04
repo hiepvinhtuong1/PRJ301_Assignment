@@ -1,9 +1,6 @@
 package com.hipdev.LeaveManagement.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.hipdev.LeaveManagement.entity.Employee;
-import com.hipdev.LeaveManagement.entity.User;
-import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -20,8 +17,6 @@ public class EmployeeDTO {
     private String phone;
 
     private LocalDate dateOfBirth;
-
-    private UserDTO user;
 
     private String gender;
 }

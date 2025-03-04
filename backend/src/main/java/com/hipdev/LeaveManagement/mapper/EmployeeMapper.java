@@ -1,6 +1,9 @@
 package com.hipdev.LeaveManagement.mapper;
 
+import com.hipdev.LeaveManagement.dto.EmployeeDTO;
 import com.hipdev.LeaveManagement.entity.Employee;
+import org.mapstruct.Mapper;
 
-public interface EmployeeMapper extends EntityMapper<Employee, Integer> {
+@Mapper(componentModel = "spring")
+public interface EmployeeMapper extends EntityMapper<EmployeeDTO, Employee> {
 }
