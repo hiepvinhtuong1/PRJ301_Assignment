@@ -1,17 +1,22 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { Modal, Button } from "react-bootstrap";
 
 const LeaveRequestList = () => {
   const [searchText, setSearchText] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [status, setStatus] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: "", content: "" });
 
   const leaveRequests = [
     {
       id: 1,
-      reason: "Vacation",
+      reason:
+        "Vacation with extended details that might be too long to fit in a single row.",
       startDate: "2025-03-10",
       endDate: "2025-03-20",
       status: "Approved",
@@ -30,6 +35,11 @@ const LeaveRequestList = () => {
       processor: { name: "HR Manager" },
     },
   ];
+
+  const handleShowModal = (title, content) => {
+    setModalContent({ title, content });
+    setShowModal(true);
+  };
 
   const filteredData = leaveRequests.filter((item) => {
     return (
@@ -84,38 +94,69 @@ const LeaveRequestList = () => {
           </select>
         </div>
       </div>
-      <table className="table table-striped table-bordered">
+      <table className="table table-striped table-bordered text-wrap">
         <thead className="thead-dark">
           <tr>
-            <th>#</th>
-            <th>Reason</th>
-            <th>Start Date</th>
-            <th>End Date</th>
-            <th>Status</th>
-            <th>Comment</th>
-            <th>Creator</th>
-            <th>Processor</th>
-            <th>Actions</th>
+            <th style={{ width: "5%" }}>#</th>
+            <th style={{ width: "10%" }}>Start Date</th>
+            <th style={{ width: "10%" }}>End Date</th>
+            <th style={{ width: "10%" }}>Status</th>
+            <th style={{ width: "15%" }}>Comment</th>
+            <th style={{ width: "10%" }}>Creator</th>
+            <th style={{ width: "10%" }}>Processor</th>
+            <th style={{ width: "15%" }}>Reason</th>
+            <th style={{ width: "15%" }}>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {filteredData.map((request) => (
+          {filteredData.map((request, index) => (
             <tr key={request.id}>
-              <td>{request.id}</td>
-              <td>{request.reason}</td>
+              <td>{index + 1}</td>
               <td>{request.startDate}</td>
-              <td>{request.endDate}</td>
+              <td>
+                {request.endDate.length > 40 ? (
+                  <>
+                    {request.endDate.substring(0, 40)}...
+                    <Button
+                      variant="link"
+                      onClick={() =>
+                        handleShowModal("End Date Details", request.endDate)
+                      }
+                    >
+                      View
+                    </Button>
+                  </>
+                ) : (
+                  request.endDate
+                )}
+              </td>
               <td>{request.status}</td>
               <td>{request.comment}</td>
               <td>{request.creator.name}</td>
               <td>{request.processor.name}</td>
               <td>
-                <button className="btn btn-info btn-sm me-2">
+                <Button
+                  variant="link"
+                  onClick={() =>
+                    handleShowModal("Reason Details", request.reason)
+                  }
+                >
+                  View Reason
+                </Button>
+              </td>
+              <td>
+                <Link
+                  to={`/leave-request/${request.id}`}
+                  className="btn btn-info btn-sm me-2"
+                >
                   <FaEye />
-                </button>
-                <button className="btn btn-warning btn-sm me-2">
+                </Link>
+                <Link
+                  to={`/leave_request/update/${request.id}`}
+                  className="btn btn-warning btn-sm me-2"
+                >
                   <FaEdit />
-                </button>
+                </Link>
                 <button className="btn btn-danger btn-sm">
                   <FaTrash />
                 </button>
@@ -124,6 +165,27 @@ const LeaveRequestList = () => {
           ))}
         </tbody>
       </table>
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>{modalContent.title}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div
+            style={{
+              maxHeight: "300px",
+              overflowY: "auto",
+              wordWrap: "break-word",
+            }}
+          >
+            {modalContent.content}
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

@@ -33,6 +33,9 @@ const NavBar = () => {
             <Link className="nav-link" to={"/leave_request/list"}>
               LEAVE REQUEST
             </Link>
+            <Link className="nav-link" to={"/calendar/view"}>
+              CALENDAR
+            </Link>
           </div>
           <div className="ms-auto">
             <Dropdown show={showMenu} onToggle={() => setShowMenu(!showMenu)}>
@@ -50,7 +53,7 @@ const NavBar = () => {
                 />
               </Dropdown.Toggle>
               <Dropdown.Menu align="end">
-                <Dropdown.Item as={Link} to="/logout">
+                <Dropdown.Item as={Link} to="/login">
                   Logout
                 </Dropdown.Item>
               </Dropdown.Menu>
