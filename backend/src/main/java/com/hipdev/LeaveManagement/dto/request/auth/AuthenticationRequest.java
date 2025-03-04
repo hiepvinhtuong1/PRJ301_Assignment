@@ -1,6 +1,5 @@
-package com.hipdev.LeaveManagement.dto.request;
+package com.hipdev.LeaveManagement.dto.request.auth;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
 @Data

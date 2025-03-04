@@ -30,7 +30,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public ApiResponse<UserDTO> getUserById(@PathVariable Long userId){
+    public ApiResponse<UserDTO> getUserById(@PathVariable String userId){
         var result = userService.getUserById(userId);
         return ApiResponse.<UserDTO>builder()
                 .code(200)

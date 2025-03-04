@@ -1,6 +1,6 @@
 package com.hipdev.LeaveManagement.service.impl;
 
-import com.hipdev.LeaveManagement.dto.request.*;
+import com.hipdev.LeaveManagement.dto.request.auth.*;
 import com.hipdev.LeaveManagement.dto.response.IntrospectResponse;
 import com.hipdev.LeaveManagement.dto.response.AuthenticationResponse;
 import com.hipdev.LeaveManagement.dto.response.RegisterResponse;
@@ -23,7 +23,6 @@ import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
