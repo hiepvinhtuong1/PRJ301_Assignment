@@ -6,6 +6,8 @@ import EmployeeProfile from "./components/profile/ProFile.jsx";
 import EmployeeList from "./components/employee/EmployeeList.jsx";
 import LeaveRequestList from "./components/leave_request/LeaveRequestList.jsx";
 import LeaveRequestUpdate from "./components/leave_request/LeaveReqeustUpdate.jsx";
+import LeaveRequestCreate from "./components/leave_request/LeaveRequestCreate.jsx";
+import LeaveRequestHandle from "./components/leave_request/LeaveRequestHandle.jsx";
 import Calendar from "./components/calendar/Calendar.jsx";
 import "../node_modules/bootstrap/dist/css/bootstrap.min.css";
 import "../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js";
@@ -27,6 +29,14 @@ function App() {
           <Route
             path="/leave_request/list"
             element={<LeaveRequestList />}
+          ></Route>
+          <Route
+            path="/leave_request/create"
+            element={<LeaveRequestCreate />}
+          ></Route>
+          <Route
+            path="/leave_request/handle"
+            element={<LeaveRequestHandle />}
           ></Route>
           <Route
             path="/leave_request/update/:id"

@@ -14,6 +14,6 @@ public class LeaveRequestDTO {
     private LocalDate endDate;
     private String status;
     private String comment;
-    private UserDTO creator;
-    private UserDTO processor;
+    private EmployeeDTO creator;
+    private EmployeeDTO processor;
 }

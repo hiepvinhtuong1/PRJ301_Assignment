@@ -143,7 +143,7 @@ public class AuthenticationSerivceImpl implements AuthenticationService {
                 .id(jit)
                 .expiryTime(expiryTime)
                 .build();
-
+        invalidatedTokenRepository.save(invalidatedToken);
         // Retrieve the username from the JWT claims
         var username = signedJWT.getJWTClaimsSet().getSubject();
 
