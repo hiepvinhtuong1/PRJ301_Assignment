@@ -1,6 +1,6 @@
 package com.hipdev.LeaveManagement.configuration;
 
-import com.hipdev.LeaveManagement.dto.request.IntrospectRequest;
+import com.hipdev.LeaveManagement.dto.request.auth.IntrospectRequest;
 import com.hipdev.LeaveManagement.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
 import org.springframework.beans.factory.annotation.Autowired;

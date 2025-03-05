@@ -27,11 +27,11 @@ const NavBar = () => {
             <Link className="nav-link active" to={"/profile"}>
               PROFILE
             </Link>
-            <Link className="nav-link" to={"/employee/list"}>
-              EMPLOYEE
-            </Link>
             <Link className="nav-link" to={"/leave_request/list"}>
               LEAVE REQUEST
+            </Link>
+            <Link className="nav-link" to={"/leave_request/handle"}>
+              APPLICATION PROCESSING
             </Link>
             <Link className="nav-link" to={"/calendar/view"}>
               CALENDAR

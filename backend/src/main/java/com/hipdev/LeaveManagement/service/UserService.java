@@ -8,8 +8,8 @@ import java.util.List;
 
 public interface UserService {
     public List<UserDTO> getAllUsers();
-    public UserDTO getUserById(Long userId);
-    public UserDTO getMyInfo(Long userId);
-    public UserDTO updateUser(UserDTO userDTO, Long userId);
-    public Void deleteUser(Long userId);
+    public UserDTO getUserById(String userId);
+    public UserDTO getMyInfo(String userId);
+    public UserDTO updateUser(UserDTO userDTO, String userId);
+    public Void deleteUser(String userId);
 }

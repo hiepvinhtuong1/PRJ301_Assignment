@@ -1,4 +1,4 @@
-package com.hipdev.LeaveManagement.dto.request;
+package com.hipdev.LeaveManagement.dto.request.auth;
 
 import lombok.*;
 

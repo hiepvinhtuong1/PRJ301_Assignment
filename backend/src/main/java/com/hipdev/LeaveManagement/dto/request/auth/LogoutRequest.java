@@ -1,5 +1,4 @@
-package com.hipdev.LeaveManagement.dto.request;
-
+package com.hipdev.LeaveManagement.dto.request.auth;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -8,6 +7,6 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class IntrospectRequest {
+public class LogoutRequest {
     String token;
 }

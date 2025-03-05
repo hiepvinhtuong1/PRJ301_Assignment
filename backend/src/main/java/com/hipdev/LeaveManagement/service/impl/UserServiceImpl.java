@@ -37,7 +37,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDTO getUserById(Long userId) {
+    public UserDTO getUserById(String username) {
+        var existedUser = userRepository.findByUsername(username).orElseThrow(
+                () -> new AppException(ErrorCode.USER_NOT_EXISTED)
+        );
+        return userMapper.toDto(existedUser);
+    }
+
+    @Override
+    public UserDTO getMyInfo(String userId) {
         var existedUser = userRepository.findById(userId).orElseThrow(
                 () -> new AppException(ErrorCode.USER_NOT_EXISTED)
         );
@@ -45,15 +53,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDTO getMyInfo(Long userId) {
-        var existedUser = userRepository.findById(userId).orElseThrow(
-                () -> new AppException(ErrorCode.USER_NOT_EXISTED)
-        );
-        return userMapper.toDto(existedUser);
-    }
-
-    @Override
-    public UserDTO updateUser(UserDTO userDTO, Long userId) {
+    public UserDTO updateUser(UserDTO userDTO, String userId) {
         // Check if the user exists by ID
         Optional<User> optionalUser = userRepository.findById(userId);
         if (!optionalUser.isPresent()) {
@@ -77,7 +77,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Void deleteUser(Long userId) {
+    public Void deleteUser(String userId) {
         // Check if the user exists by ID
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new AppException(ErrorCode.USER_NOT_EXISTED)

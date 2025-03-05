@@ -1,7 +1,9 @@
 package com.hipdev.LeaveManagement.service.impl;
 
 import com.hipdev.LeaveManagement.dto.LeaveRequestDTO;
+import com.hipdev.LeaveManagement.dto.request.leave_request.CreateLeaveRequest;
 import com.hipdev.LeaveManagement.entity.LeaveRequest;
+import com.hipdev.LeaveManagement.entity.User;
 import com.hipdev.LeaveManagement.exception.AppException;
 import com.hipdev.LeaveManagement.exception.ErrorCode;
 import com.hipdev.LeaveManagement.mapper.LeaveRequestMapper;
@@ -13,10 +15,12 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -44,22 +48,48 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     @Override
-    public List<LeaveRequestDTO> getLeaveRequestByUsername(String username) {
+    public List<LeaveRequestDTO> getLeaveRequestByUsername() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+        var username = authentication.getName();
         var existedUser = userRepository.findByUsername(username).orElseThrow(
                 () -> new AppException(ErrorCode.USER_NOT_EXISTED)
         );
-        List<LeaveRequest> leaveRequests = new ArrayList<>();
-        if (existedUser.getEmployee() != null &&
-                existedUser.getEmployee().getCreatedRequests() != null) {
-            leaveRequests = existedUser.getEmployee().getCreatedRequests();
+
+        if (existedUser.getEmployee() == null || existedUser.getEmployee().getCreatedRequests() == null) {
+            return List.of();
         }
-        return leaveRequestMapper.toDtos(leaveRequests);
+
+        return leaveRequestMapper.toDtos(existedUser.getEmployee().getCreatedRequests());
     }
 
-    @Override
-    public LeaveRequestDTO createLeaveRequest(LeaveRequestDTO leaveRequestDTO) {
 
-        return null;
+    @Override
+    public LeaveRequestDTO createLeaveRequest(CreateLeaveRequest request) {
+        if (Objects.isNull(request.getStartDate()) || Objects.isNull(request.getEndDate())) {
+            throw new AppException(ErrorCode.LEAVE_REQUEST_DATE_NULL);
+        }
+        if (request.getEndDate().isBefore(request.getStartDate())) {
+            throw new AppException(ErrorCode.LEAVE_REQUEST_INVALID_DATE_RANGE);
+        }
+
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        User existedUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        LeaveRequest leaveRequest = LeaveRequest.builder()
+                .title(request.getTitle())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .reason(request.getReason())
+                .creator(existedUser.getEmployee())
+                .status(LeaveRequest.Status.Pending)
+                .build();
+        leaveRequest = leaveRequestRepository.save(leaveRequest);
+
+        return leaveRequestMapper.toDto(leaveRequest);
     }
 
     @Override

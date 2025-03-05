@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaEye, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import { Modal, Button } from "react-bootstrap";
 
 const LeaveRequestList = () => {
@@ -113,23 +113,7 @@ const LeaveRequestList = () => {
             <tr key={request.id}>
               <td>{index + 1}</td>
               <td>{request.startDate}</td>
-              <td>
-                {request.endDate.length > 40 ? (
-                  <>
-                    {request.endDate.substring(0, 40)}...
-                    <Button
-                      variant="link"
-                      onClick={() =>
-                        handleShowModal("End Date Details", request.endDate)
-                      }
-                    >
-                      View
-                    </Button>
-                  </>
-                ) : (
-                  request.endDate
-                )}
-              </td>
+              <td>{request.endDate}</td>
               <td>{request.status}</td>
               <td>{request.comment}</td>
               <td>{request.creator.name}</td>
@@ -165,6 +149,19 @@ const LeaveRequestList = () => {
           ))}
         </tbody>
       </table>
+
+      {/* Floating Add Request Button */}
+      {/* Floating Add Request Button */}
+      <div className="position-fixed bottom-0 end-0 p-4">
+        <Link
+          to="/leave_request/create"
+          className="btn btn-success btn-lg rounded-circle d-flex align-items-center justify-content-center shadow"
+          style={{ width: "60px", height: "60px" }}
+        >
+          <FaPlus size={30} />
+        </Link>
+      </div>
+
       <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>{modalContent.title}</Modal.Title>

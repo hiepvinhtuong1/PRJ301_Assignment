@@ -1,6 +1,6 @@
 package com.hipdev.LeaveManagement.controller;
 
-import com.hipdev.LeaveManagement.dto.request.*;
+import com.hipdev.LeaveManagement.dto.request.auth.*;
 import com.hipdev.LeaveManagement.dto.response.ApiResponse;
 import com.hipdev.LeaveManagement.dto.response.AuthenticationResponse;
 import com.hipdev.LeaveManagement.dto.response.IntrospectResponse;

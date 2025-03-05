@@ -1,175 +1,154 @@
-import { useState } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
+import React, { useState } from "react";
+import { Table, Select, DatePicker, Button } from "antd";
+import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
+dayjs.extend(isoWeek);
 
-const Calendar = () => {
-  const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [filteredEmployees, setFilteredEmployees] = useState([]);
-  const [daysOfWeek, setDaysOfWeek] = useState([]);
+const { Option } = Select;
+const { RangePicker } = DatePicker;
 
-  // Employee data (true = working, false = leave)
-  const employees = [
+const employees = ["Mr A", "Mr B", "Mr C", "Mr D"];
+const rawData = {
+  "Mr A": {
+    "1/1": "Đi làm",
+    "2/1": "Đi làm",
+    "3/1": "Đi làm",
+    "4/1": "Đi làm",
+    "5/1": "Đi làm",
+    "6/1": "Đi làm",
+    "7/1": "Đi làm",
+    "8/1": "Đi làm",
+    "9/1": "Đi làm",
+  },
+  "Mr B": {
+    "1/1": "Đi làm",
+    "2/1": "Đi làm",
+    "3/1": "Nghỉ",
+    "4/1": "Nghỉ",
+    "5/1": "Đi làm",
+    "6/1": "Đi làm",
+    "7/1": "Đi làm",
+    "8/1": "Đi làm",
+    "9/1": "Đi làm",
+  },
+  "Mr C": {
+    "1/1": "Đi làm",
+    "2/1": "Đi làm",
+    "3/1": "Đi làm",
+    "4/1": "Đi làm",
+    "5/1": "Đi làm",
+    "6/1": "Nghỉ",
+    "7/1": "Đi làm",
+    "8/1": "Đi làm",
+    "9/1": "Đi làm",
+  },
+  "Mr D": {
+    "1/1": "Đi làm",
+    "2/1": "Nghỉ",
+    "3/1": "Nghỉ",
+    "4/1": "Đi làm",
+    "5/1": "Đi làm",
+    "6/1": "Đi làm",
+    "7/1": "Đi làm",
+    "8/1": "Đi làm",
+    "9/1": "Đi làm",
+  },
+};
+
+const aggregateData = (type, startDate, endDate) => {
+  let groupedData = {};
+  employees.forEach((employee) => {
+    groupedData[employee] = {};
+  });
+
+  let current = dayjs(startDate);
+  while (current.isBefore(endDate) || current.isSame(endDate, type)) {
+    let periodKey =
+      type === "week"
+        ? `Tuần ${current.isoWeek()}`
+        : type === "month"
+        ? `Tháng ${current.month() + 1}`
+        : type === "year"
+        ? `Năm ${current.year()}`
+        : current.format("DD/MM");
+
+    employees.forEach((employee) => {
+      let workDays = Object.entries(rawData[employee])
+        .filter(([date]) => {
+          let checkDate = dayjs(date, "D/M");
+          return type === "week"
+            ? checkDate.isoWeek() === current.isoWeek()
+            : type === "month"
+            ? checkDate.month() === current.month()
+            : type === "year"
+            ? checkDate.year() === current.year()
+            : checkDate.isSame(current, "day");
+        })
+        .filter(([_, status]) => status === "Đi làm").length;
+
+      let totalDays =
+        type === "week"
+          ? 7
+          : type === "month"
+          ? current.daysInMonth()
+          : type === "year"
+          ? 365
+          : 1;
+
+      groupedData[employee][periodKey] = `${workDays}/${totalDays}`;
+    });
+    current = current.add(1, type);
+  }
+  return groupedData;
+};
+
+const CalendarAgenda = () => {
+  const [viewType, setViewType] = useState("day");
+  const [dateRange, setDateRange] = useState([]);
+  const [filteredData, setFilteredData] = useState(rawData);
+
+  const handleSearch = () => {
+    if (dateRange.length === 2) {
+      setFilteredData(
+        aggregateData(viewType, dayjs(dateRange[0]), dayjs(dateRange[1]))
+      );
+    }
+  };
+
+  const columns = [
     {
-      name: "Mr A",
-      status: [true, true, true, true, true, true, true],
+      title: "Nhân sự",
+      dataIndex: "name",
+      key: "name",
     },
-    {
-      name: "Mr B",
-      status: [true, true, false, true, false, true, true],
-    },
-    {
-      name: "Mr C",
-      status: [false, true, true, true, true, false, true],
-    },
-    {
-      name: "Mr D",
-      status: [true, false, true, true, true, true, false],
-    },
-    {
-      name: "Mr A",
-      status: [true, true, true, true, true, true, true],
-    },
-    {
-      name: "Mr B",
-      status: [true, true, false, true, false, true, true],
-    },
-    {
-      name: "Mr C",
-      status: [false, true, true, true, true, false, true],
-    },
-    {
-      name: "Mr D",
-      status: [true, false, true, true, true, true, false],
-    },
-    {
-      name: "Mr A",
-      status: [true, true, true, true, true, true, true],
-    },
-    {
-      name: "Mr B",
-      status: [true, true, false, true, false, true, true],
-    },
-    {
-      name: "Mr C",
-      status: [false, true, true, true, true, false, true],
-    },
-    {
-      name: "Mr D",
-      status: [true, false, true, true, true, true, false],
-    },
+    ...Object.keys(filteredData[employees[0]] || {}).map((date) => ({
+      title: date,
+      dataIndex: date,
+      key: date,
+    })),
   ];
 
-  // Function to generate days of the week based on start and end date
-  const generateDaysOfWeek = (start, end) => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    let days = [];
-
-    while (startDate <= endDate) {
-      days.push(
-        startDate.toLocaleDateString("en-US", {
-          weekday: "short",
-          day: "2-digit",
-          month: "2-digit",
-        })
-      );
-      startDate.setDate(startDate.getDate() + 1); // Move to the next day
-    }
-
-    return days;
-  };
-
-  const handleSubmit = () => {
-    // Filter employees based on search text
-    const filtered = employees.filter((employee) =>
-      employee.name.toLowerCase().includes(searchText.toLowerCase())
-    );
-    setFilteredEmployees(filtered);
-
-    // Generate the days of the week based on selected date range
-    if (startDate && endDate) {
-      setDaysOfWeek(generateDaysOfWeek(startDate, endDate));
-    }
-  };
+  const tableData = employees.map((employee) => {
+    return { key: employee, name: employee, ...filteredData[employee] };
+  });
 
   return (
-    <div className="container mt-4">
-      <h2>Employee Attendance Calendar</h2>
-
-      {/* Filters for Search, Start Date, and End Date */}
-      <div className="row mb-3">
-        <div className="col-md-3">
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Search by employee name"
-            onChange={(e) => setSearchText(e.target.value)}
-          />
-        </div>
-        <div className="col-md-3">
-          <input
-            type="date"
-            className="form-control"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-        </div>
-        <div className="col-md-3">
-          <input
-            type="date"
-            className="form-control"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-        </div>
-        <div className="col-md-3">
-          <button className="btn btn-primary" onClick={handleSubmit}>
-            Submit
-          </button>
-        </div>
-      </div>
-
-      {/* Calendar Table (responsive) */}
-      <div className="table-responsive">
-        <table className="table table-bordered text-center">
-          <thead className="thead-dark">
-            <tr>
-              <th>Nhân sự</th>
-              {daysOfWeek.map((day, index) => (
-                <th key={index}>{day}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEmployees.length > 0 ? (
-              filteredEmployees.map((employee, rowIndex) => (
-                <tr key={rowIndex}>
-                  <td>{employee.name}</td>
-                  {employee.status
-                    .slice(0, daysOfWeek.length)
-                    .map((isWorking, colIndex) => (
-                      <td
-                        key={colIndex}
-                        style={{
-                          backgroundColor: isWorking ? "green" : "red",
-                          color: "white",
-                          textAlign: "center",
-                        }}
-                      ></td> // No text here, only colors
-                    ))}
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={daysOfWeek.length + 1}>No data available</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+    <div>
+      <RangePicker
+        onChange={(dates) =>
+          setDateRange(dates ? dates.map((date) => date.toISOString()) : [])
+        }
+      />
+      <Select value={viewType} onChange={(value) => setViewType(value)}>
+        <Option value="day">Ngày</Option>
+        <Option value="week">Tuần</Option>
+        <Option value="month">Tháng</Option>
+        <Option value="year">Năm</Option>
+      </Select>
+      <Button onClick={handleSearch}>Tìm kiếm</Button>
+      <Table columns={columns} dataSource={tableData} pagination={false} />
     </div>
   );
 };
 
-export default Calendar;
+export default CalendarAgenda;
