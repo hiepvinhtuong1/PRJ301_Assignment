@@ -47,7 +47,7 @@ public class Employee {
     private Employee leader;
 
     @OneToMany(mappedBy = "leader", cascade = CascadeType.ALL) // 1 leader quản lý nhiều employee
-    private List<Employee> subordinates;
+    private List<Employee> employeeList;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();

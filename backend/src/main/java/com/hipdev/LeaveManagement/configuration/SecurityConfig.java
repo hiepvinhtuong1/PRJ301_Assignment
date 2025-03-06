@@ -45,7 +45,8 @@ public class SecurityConfig {
                 }))
                 .authorizeHttpRequests(request ->
                         request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
-                                .anyRequest().permitAll())
+
+                                .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwtConfigurer ->
                                         jwtConfigurer.decoder(jwtDecoder())
@@ -58,7 +59,7 @@ public class SecurityConfig {
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        jwtGrantedAuthoritiesConverter.setAuthorityPrefix(" ");
+        jwtGrantedAuthoritiesConverter.setAuthorityPrefix("");
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);
         return converter;

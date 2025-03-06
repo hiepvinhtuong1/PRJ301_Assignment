@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -47,48 +48,48 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
 
-        public Page<LeaveRequestDTO> getLeaveRequestByCreatorId(int page, int size) {
-            var authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication == null) {
-                throw new AppException(ErrorCode.UNAUTHENTICATED);
-            }
-            var username = authentication.getName();
-            var existedUser = userRepository.findByUsername(username).orElseThrow(
-                    () -> new AppException(ErrorCode.USER_NOT_EXISTED)
-            );
-
-            if (existedUser.getEmployee() == null || existedUser.getEmployee().getCreatedRequests() == null) {
-                return new PageImpl<>(List.of(), PageRequest.of(page, size), 0); // Trả về trang rỗng
-            }
-
-            // Tạo Pageable với sắp xếp theo id giảm dần
-            Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-
-            // Lấy danh sách yêu cầu nghỉ phép
-            Page<LeaveRequest> leaveRequests = leaveRequestRepository.findByFilters(
-                    null,
-                    null,
-                    null,
-                    existedUser.getEmployee().getEmployeeId(),
-                    null,
-                    pageable);
-
-            return leaveRequests.map(leaveRequestMapper::toDto);
+    public Page<LeaveRequestDTO> getLeaveRequestByCreatorId(int page, int size) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
+        var username = authentication.getName();
+        var existedUser = userRepository.findByUsername(username).orElseThrow(
+                () -> new AppException(ErrorCode.USER_NOT_EXISTED)
+        );
+
+        if (existedUser.getEmployee() == null || existedUser.getEmployee().getCreatedRequests() == null) {
+            return new PageImpl<>(List.of(), PageRequest.of(page, size), 0); // Trả về trang rỗng
+        }
+
+        // Tạo Pageable với sắp xếp theo id giảm dần
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+
+        // Lấy danh sách yêu cầu nghỉ phép
+        Page<LeaveRequest> leaveRequests = leaveRequestRepository.findByFilters(
+                null,
+                null,
+                null,
+                existedUser.getEmployee().getEmployeeId(),
+                null,
+                pageable);
+
+        return leaveRequests.map(leaveRequestMapper::toDto);
+    }
 
 
     @Override
+    @PreAuthorize("hasAuthority('CREATE_REQUEST')")
     public LeaveRequestDTO createLeaveRequest(CreateLeaveRequest request) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        User existedUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         if (Objects.isNull(request.getStartDate()) || Objects.isNull(request.getEndDate())) {
             throw new AppException(ErrorCode.LEAVE_REQUEST_DATE_NULL);
         }
         if (request.getEndDate().isBefore(request.getStartDate())) {
             throw new AppException(ErrorCode.LEAVE_REQUEST_INVALID_DATE_RANGE);
         }
-
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        User existedUser = userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         LeaveRequest leaveRequest = LeaveRequest.builder()
                 .title(request.getTitle())

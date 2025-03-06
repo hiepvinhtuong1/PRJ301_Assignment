@@ -6,10 +6,15 @@ import com.hipdev.LeaveManagement.dto.response.ApiResponse;
 import com.hipdev.LeaveManagement.service.LeaveRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/leave-requests")
 @RequiredArgsConstructor
@@ -30,7 +35,9 @@ public class LeaveRequestController {
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<LeaveRequestDTO>> createLeaveRequest(
             @RequestBody @Valid CreateLeaveRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         LeaveRequestDTO leaveRequestDTO = leaveRequestService.createLeaveRequest(request);
+
         return ResponseEntity.ok(ApiResponse.<LeaveRequestDTO>builder()
                 .message("Leave request created successfully")
                 .data(leaveRequestDTO)

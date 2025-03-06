@@ -20,5 +20,5 @@ public class Permission {
     private String description;
 
     @ManyToMany(mappedBy = "permissions")
-    private List<User> users; // 1 Permission có thể thuộc nhiều User
+    private List<Role> roles; // 1 Permission có thể thuộc nhiều Role
 }
