@@ -36,7 +36,11 @@ public class AuthenController {
     @PostMapping("/login")
     public ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest authenticationRequest)  {
         var result = authenticationService.login(authenticationRequest);
-        return ApiResponse.<AuthenticationResponse>builder().data(result).build();
+        return ApiResponse.<AuthenticationResponse>builder()
+                .code(200)
+                .message("success")
+                .data(result)
+                .build();
     }
 
     @PostMapping("/introspect")

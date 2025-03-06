@@ -6,7 +6,8 @@ export default class ApiService {
   // AUTH
   static async loginUser(user) {
     const response = await axios.post(`${this.BASE_URL}/auth/login`, user);
-    console.log(response.data);
     return response
   }
+
+
 }

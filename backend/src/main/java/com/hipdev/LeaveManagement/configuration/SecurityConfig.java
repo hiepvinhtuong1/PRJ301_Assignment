@@ -45,8 +45,7 @@ public class SecurityConfig {
                 }))
                 .authorizeHttpRequests(request ->
                         request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
-
-                                .anyRequest().authenticated())
+                                .anyRequest().permitAll())
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwtConfigurer ->
                                         jwtConfigurer.decoder(jwtDecoder())

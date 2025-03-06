@@ -32,7 +32,7 @@ public class LeaveRequestController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         Page<LeaveRequestDTO> leaveRequests = leaveRequestService.getYourOwnRequest(page - 1, size, filterLeaveRequest);
-        return ResponseEntity.ok(ApiResponse.<Page<LeaveRequestDTO>>builder()
+            return ResponseEntity.ok(ApiResponse.<Page<LeaveRequestDTO>>builder()
                 .message("List of leave requests by username with pagination")
                 .data(leaveRequests)
                 .build());

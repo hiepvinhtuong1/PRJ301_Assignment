@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FaEye, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import { Modal, Button } from "react-bootstrap";
+import axios from "axios";
 
 const LeaveRequestList = () => {
   const [searchText, setSearchText] = useState("");
@@ -11,8 +12,12 @@ const LeaveRequestList = () => {
   const [status, setStatus] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", content: "" });
+  const [displayedRequests, setDisplayedRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const leaveRequests = [
+  const navigate = useNavigate();
+
+  const initialRequests = [
     {
       id: 1,
       reason:
@@ -36,22 +41,105 @@ const LeaveRequestList = () => {
     },
   ];
 
+  useEffect(() => {
+    fetchLeaveRequests();
+  }, []);
+
+  // Hàm gọi API để lấy dữ liệu
+  const fetchLeaveRequests = async () => {
+    setLoading(true);
+
+    // Tạo object params động, chỉ thêm tham số nếu có giá trị
+    const params = {
+      page: 1,
+      size: 10,
+    };
+    if (searchText) params.searchText = searchText;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (status) params.status = status;
+
+    try {
+      const response = await axios.get(
+        "http://localhost:8081/hiep/leave-requests",
+        {
+          params, // Truyền params động
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("TOKEN")}`,
+          },
+        }
+      );
+      console.log("API Response:", response.data);
+      setDisplayedRequests(response.data.data.content || []);
+    } catch (error) {
+      console.error("Error fetching leave requests:", error);
+      setDisplayedRequests(initialRequests);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Xử lý khi nhấn nút Search
+  const handleSearch = async () => {
+    const params = new URLSearchParams();
+    if (searchText) params.set("searchText", searchText);
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
+    if (status) params.set("status", status);
+    params.set("page", "1");
+    params.set("size", "10");
+
+    navigate(`?${params.toString()}`);
+
+    // Tạo object params động cho API, chỉ thêm tham số nếu có giá trị
+    const apiParams = {
+      page: 1,
+      size: 10,
+    };
+    if (searchText) apiParams.searchText = searchText;
+    if (startDate) apiParams.startDate = startDate;
+    if (endDate) apiParams.endDate = endDate;
+    if (status) apiParams.status = status;
+
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        "http://localhost:8081/hiep/leave-requests",
+        {
+          params: apiParams, // Truyền params động
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("TOKEN")}`,
+          },
+        }
+      );
+      setDisplayedRequests(response.data.data.content || []);
+    } catch (error) {
+      console.error("Error fetching leave requests:", error);
+      setDisplayedRequests(
+        initialRequests.filter((item) => {
+          return (
+            (searchText === "" ||
+              Object.values(item).some((val) =>
+                String(val).toLowerCase().includes(searchText.toLowerCase())
+              )) &&
+            (startDate === "" || item.startDate >= startDate) &&
+            (endDate === "" || item.endDate <= endDate) &&
+            (status === "" ||
+              item.status.toLowerCase() === status.toLowerCase())
+          );
+        })
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleShowModal = (title, content) => {
     setModalContent({ title, content });
     setShowModal(true);
   };
-
-  const filteredData = leaveRequests.filter((item) => {
-    return (
-      (searchText === "" ||
-        Object.values(item).some((val) =>
-          String(val).toLowerCase().includes(searchText.toLowerCase())
-        )) &&
-      (startDate === "" || item.startDate >= startDate) &&
-      (endDate === "" || item.endDate <= endDate) &&
-      (status === "" || item.status.toLowerCase() === status.toLowerCase())
-    );
-  });
 
   return (
     <div className="container mt-4">
@@ -62,6 +150,7 @@ const LeaveRequestList = () => {
             type="text"
             className="form-control"
             placeholder="Search..."
+            value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
           />
         </div>
@@ -94,6 +183,13 @@ const LeaveRequestList = () => {
           </select>
         </div>
       </div>
+      <div className="row mb-3">
+        <div className="col">
+          <Button variant="primary" onClick={handleSearch} disabled={loading}>
+            {loading ? "Searching..." : "Search"}
+          </Button>
+        </div>
+      </div>
       <table className="table table-striped table-bordered text-wrap">
         <thead className="thead-dark">
           <tr>
@@ -109,7 +205,7 @@ const LeaveRequestList = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredData.map((request, index) => (
+          {displayedRequests.map((request, index) => (
             <tr key={request.id}>
               <td>{index + 1}</td>
               <td>{request.startDate}</td>
@@ -117,7 +213,6 @@ const LeaveRequestList = () => {
               <td>{request.status}</td>
               <td>{request.comment}</td>
               <td>{request.creator.name}</td>
-              <td>{request.processor.name}</td>
               <td>
                 <Button
                   variant="link"
@@ -150,8 +245,6 @@ const LeaveRequestList = () => {
         </tbody>
       </table>
 
-      {/* Floating Add Request Button */}
-      {/* Floating Add Request Button */}
       <div className="position-fixed bottom-0 end-0 p-4">
         <Link
           to="/leave_request/create"
