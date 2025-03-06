@@ -26,9 +26,9 @@ public class User {
 
     @ManyToMany
     @JoinTable(
-            name = "user_roles",
+            name = "user_permissions",
             joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_name")
+            inverseJoinColumns = @JoinColumn(name = "permission_name")
     ) // 1 User có nhiều Role
-    private List<Role> roles;
+    private List<Permission> permissions;
 }

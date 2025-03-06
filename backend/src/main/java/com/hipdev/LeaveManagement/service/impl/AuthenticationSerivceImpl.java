@@ -245,13 +245,8 @@ public class AuthenticationSerivceImpl implements AuthenticationService {
         StringJoiner stringJoiner = new StringJoiner(" ");
 
         // Add roles to the scope if the user has any
-        if (!CollectionUtils.isEmpty(user.getRoles()))
-            user.getRoles().forEach(role -> {
-                stringJoiner.add("ROLE_" + role.getRoleName());
-                // Add permissions to the scope if the role has any
-                if (!CollectionUtils.isEmpty(role.getPermissions()))
-                    role.getPermissions().forEach(permission -> stringJoiner.add(permission.getPermissionName()));
-            });
+        if (!CollectionUtils.isEmpty(user.getPermissions()))
+            user.getPermissions().forEach(permission -> stringJoiner.add(permission.getPermissionName()));
 
         return stringJoiner.toString(); // Return the built scope
     }
