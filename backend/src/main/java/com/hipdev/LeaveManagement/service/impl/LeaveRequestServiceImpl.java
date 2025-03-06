@@ -15,6 +15,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -47,8 +50,8 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         return leaveRequestMapper.toDto(existedLeaveRequest);
     }
 
-    @Override
-    public List<LeaveRequestDTO> getLeaveRequestByUsername() {
+
+    public Page<LeaveRequestDTO> getLeaveRequestByUsername(int page, int size) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -59,10 +62,19 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         );
 
         if (existedUser.getEmployee() == null || existedUser.getEmployee().getCreatedRequests() == null) {
-            return List.of();
+            return new PageImpl<>(List.of(), PageRequest.of(page, size), 0); // Trả về trang rỗng
         }
 
-        return leaveRequestMapper.toDtos(existedUser.getEmployee().getCreatedRequests());
+        // Lấy danh sách yêu cầu nghỉ phép
+        List<LeaveRequest> leaveRequests = existedUser.getEmployee().getCreatedRequests();
+        List<LeaveRequestDTO> leaveRequestDTOs = leaveRequestMapper.toDtos(leaveRequests);
+
+        // Tạo phân trang thủ công
+        int start = Math.min((int) PageRequest.of(page, size).getOffset(), leaveRequestDTOs.size());
+        int end = Math.min(start + size, leaveRequestDTOs.size());
+        List<LeaveRequestDTO> pagedList = leaveRequestDTOs.subList(start, end);
+
+        return new PageImpl<>(pagedList, PageRequest.of(page, size), leaveRequestDTOs.size());
     }
 
 

@@ -6,6 +6,7 @@ import com.hipdev.LeaveManagement.dto.response.ApiResponse;
 import com.hipdev.LeaveManagement.service.LeaveRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,11 +19,13 @@ public class LeaveRequestController {
     private final LeaveRequestService leaveRequestService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<LeaveRequestDTO>>> getLeaveRequestByUsername() {
-        List<LeaveRequestDTO> list = leaveRequestService.getLeaveRequestByUsername();
-        return ResponseEntity.ok(ApiResponse.<List<LeaveRequestDTO>>builder()
-                .message("List of leave request by username")
-                .data(list)
+    public ResponseEntity<ApiResponse<Page<LeaveRequestDTO>>> getLeaveRequestByUsername(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<LeaveRequestDTO> leaveRequests = leaveRequestService.getLeaveRequestByUsername(page, size);
+        return ResponseEntity.ok(ApiResponse.<Page<LeaveRequestDTO>>builder()
+                .message("List of leave requests by username with pagination")
+                .data(leaveRequests)
                 .build());
     }
 
