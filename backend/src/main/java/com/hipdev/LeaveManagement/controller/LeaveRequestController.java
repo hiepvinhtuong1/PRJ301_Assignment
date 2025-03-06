@@ -10,8 +10,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/leave-requests")
 @RequiredArgsConstructor
@@ -20,9 +18,9 @@ public class LeaveRequestController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<LeaveRequestDTO>>> getLeaveRequestByUsername(
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Page<LeaveRequestDTO> leaveRequests = leaveRequestService.getLeaveRequestByUsername(page, size);
+        Page<LeaveRequestDTO> leaveRequests = leaveRequestService.getLeaveRequestByCreatorId(page-1, size);
         return ResponseEntity.ok(ApiResponse.<Page<LeaveRequestDTO>>builder()
                 .message("List of leave requests by username with pagination")
                 .data(leaveRequests)

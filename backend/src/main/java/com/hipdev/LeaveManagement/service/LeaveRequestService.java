@@ -9,7 +9,7 @@ import java.util.List;
 public interface LeaveRequestService {
     public List<LeaveRequestDTO> getAllLeaveRequests();
     public LeaveRequestDTO getLeaveRequestById(Long id);
-    public Page<LeaveRequestDTO> getLeaveRequestByUsername(int page, int size);
+    public Page<LeaveRequestDTO> getLeaveRequestByCreatorId(int page, int size);
     public LeaveRequestDTO createLeaveRequest(CreateLeaveRequest request);
     public LeaveRequestDTO updateLeaveRequest(LeaveRequestDTO leaveRequestDTO);
     public Void deleteLeaveRequest(Long leaveRequestId);

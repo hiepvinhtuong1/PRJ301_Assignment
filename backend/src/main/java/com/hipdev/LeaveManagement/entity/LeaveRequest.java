@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "leave_requests")
@@ -33,6 +34,9 @@ public class LeaveRequest {
 
     @Column(columnDefinition = "TEXT")
     private String comment;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @ManyToOne
     @JoinColumn(name = "creator_id", nullable = false) // Người tạo request

@@ -7,7 +7,6 @@ import com.hipdev.LeaveManagement.entity.User;
 import com.hipdev.LeaveManagement.exception.AppException;
 import com.hipdev.LeaveManagement.exception.ErrorCode;
 import com.hipdev.LeaveManagement.mapper.LeaveRequestMapper;
-import com.hipdev.LeaveManagement.mapper.UserMapper;
 import com.hipdev.LeaveManagement.repository.LeaveRequestRepository;
 import com.hipdev.LeaveManagement.repository.UserRepository;
 import com.hipdev.LeaveManagement.service.LeaveRequestService;
@@ -15,13 +14,10 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -51,31 +47,34 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
 
-    public Page<LeaveRequestDTO> getLeaveRequestByUsername(int page, int size) {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        public Page<LeaveRequestDTO> getLeaveRequestByCreatorId(int page, int size) {
+            var authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null) {
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
+            var username = authentication.getName();
+            var existedUser = userRepository.findByUsername(username).orElseThrow(
+                    () -> new AppException(ErrorCode.USER_NOT_EXISTED)
+            );
+
+            if (existedUser.getEmployee() == null || existedUser.getEmployee().getCreatedRequests() == null) {
+                return new PageImpl<>(List.of(), PageRequest.of(page, size), 0); // Trả về trang rỗng
+            }
+
+            // Tạo Pageable với sắp xếp theo id giảm dần
+            Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+
+            // Lấy danh sách yêu cầu nghỉ phép
+            Page<LeaveRequest> leaveRequests = leaveRequestRepository.findByFilters(
+                    null,
+                    null,
+                    null,
+                    existedUser.getEmployee().getEmployeeId(),
+                    null,
+                    pageable);
+
+            return leaveRequests.map(leaveRequestMapper::toDto);
         }
-        var username = authentication.getName();
-        var existedUser = userRepository.findByUsername(username).orElseThrow(
-                () -> new AppException(ErrorCode.USER_NOT_EXISTED)
-        );
-
-        if (existedUser.getEmployee() == null || existedUser.getEmployee().getCreatedRequests() == null) {
-            return new PageImpl<>(List.of(), PageRequest.of(page, size), 0); // Trả về trang rỗng
-        }
-
-        // Lấy danh sách yêu cầu nghỉ phép
-        List<LeaveRequest> leaveRequests = existedUser.getEmployee().getCreatedRequests();
-        List<LeaveRequestDTO> leaveRequestDTOs = leaveRequestMapper.toDtos(leaveRequests);
-
-        // Tạo phân trang thủ công
-        int start = Math.min((int) PageRequest.of(page, size).getOffset(), leaveRequestDTOs.size());
-        int end = Math.min(start + size, leaveRequestDTOs.size());
-        List<LeaveRequestDTO> pagedList = leaveRequestDTOs.subList(start, end);
-
-        return new PageImpl<>(pagedList, PageRequest.of(page, size), leaveRequestDTOs.size());
-    }
 
 
     @Override
