@@ -46,11 +46,8 @@ public class LeaveRequest {
     @JoinColumn(name = "processor_id") // Người xử lý request, có thể NULL
     private Employee processor;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Status status = Status.Pending;
+    @JoinColumn(name = "status", nullable = false)
+    private String status;
 
-    public enum Status {
-        Pending, Approved, Rejected
-    }
+
 }

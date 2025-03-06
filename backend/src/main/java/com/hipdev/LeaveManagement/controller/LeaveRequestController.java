@@ -1,10 +1,12 @@
 package com.hipdev.LeaveManagement.controller;
 
 import com.hipdev.LeaveManagement.dto.LeaveRequestDTO;
+import com.hipdev.LeaveManagement.dto.request.FilterLeaveRequest;
 import com.hipdev.LeaveManagement.dto.request.leave_request.CreateLeaveRequest;
 import com.hipdev.LeaveManagement.dto.response.ApiResponse;
 import com.hipdev.LeaveManagement.service.LeaveRequestService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,6 +15,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Slf4j
 @RestController
@@ -23,9 +28,10 @@ public class LeaveRequestController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<LeaveRequestDTO>>> getLeaveRequestByUsername(
+            @ModelAttribute FilterLeaveRequest filterLeaveRequest,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Page<LeaveRequestDTO> leaveRequests = leaveRequestService.getLeaveRequestByCreatorId(page-1, size);
+        Page<LeaveRequestDTO> leaveRequests = leaveRequestService.getYourOwnRequest(page - 1, size, filterLeaveRequest);
         return ResponseEntity.ok(ApiResponse.<Page<LeaveRequestDTO>>builder()
                 .message("List of leave requests by username with pagination")
                 .data(leaveRequests)

@@ -19,7 +19,7 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
             "AND (:creatorId IS NULL OR lr.creator.employeeId = :creatorId) " +
             "AND (:processorId IS NULL OR lr.processor.employeeId = :processorId)")
     Page<LeaveRequest> findByFilters(
-            @Param("status") LeaveRequest.Status status,
+            @Param("status") String status,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
             @Param("creatorId") Integer creatorId,

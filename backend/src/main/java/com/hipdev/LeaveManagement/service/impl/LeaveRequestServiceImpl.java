@@ -1,6 +1,7 @@
 package com.hipdev.LeaveManagement.service.impl;
 
 import com.hipdev.LeaveManagement.dto.LeaveRequestDTO;
+import com.hipdev.LeaveManagement.dto.request.FilterLeaveRequest;
 import com.hipdev.LeaveManagement.dto.request.leave_request.CreateLeaveRequest;
 import com.hipdev.LeaveManagement.entity.LeaveRequest;
 import com.hipdev.LeaveManagement.entity.User;
@@ -47,8 +48,9 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         return leaveRequestMapper.toDto(existedLeaveRequest);
     }
 
-
-    public Page<LeaveRequestDTO> getLeaveRequestByCreatorId(int page, int size) {
+    @Override
+    @PreAuthorize("hasAuthority('READ_REQUEST')")
+    public Page<LeaveRequestDTO> getYourOwnRequest(int page, int size, FilterLeaveRequest filterLeaveRequest) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -58,21 +60,22 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 () -> new AppException(ErrorCode.USER_NOT_EXISTED)
         );
 
-        if (existedUser.getEmployee() == null || existedUser.getEmployee().getCreatedRequests() == null) {
-            return new PageImpl<>(List.of(), PageRequest.of(page, size), 0); // Trả về trang rỗng
+        if (existedUser.getEmployee() == null) {
+            return new PageImpl<>(List.of(), PageRequest.of(page, size), 0); // Trả về trang rỗng nếu không có Employee
         }
 
-        // Tạo Pageable với sắp xếp theo id giảm dần
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
-        // Lấy danh sách yêu cầu nghỉ phép
+
+
         Page<LeaveRequest> leaveRequests = leaveRequestRepository.findByFilters(
-                null,
-                null,
-                null,
+                filterLeaveRequest.getStatus(),
+                filterLeaveRequest.getStartDate(),
+                filterLeaveRequest.getEndDate(),
                 existedUser.getEmployee().getEmployeeId(),
-                null,
+                filterLeaveRequest.getProcessorId(),
                 pageable);
+
 
         return leaveRequests.map(leaveRequestMapper::toDto);
     }
@@ -97,7 +100,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 .endDate(request.getEndDate())
                 .reason(request.getReason())
                 .creator(existedUser.getEmployee())
-                .status(LeaveRequest.Status.Pending)
+                .status("PENDING")
                 .build();
         leaveRequest = leaveRequestRepository.save(leaveRequest);
 
