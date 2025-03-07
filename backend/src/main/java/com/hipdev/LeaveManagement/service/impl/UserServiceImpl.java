@@ -6,7 +6,6 @@ import com.hipdev.LeaveManagement.entity.User;
 import com.hipdev.LeaveManagement.exception.AppException;
 import com.hipdev.LeaveManagement.exception.ErrorCode;
 import com.hipdev.LeaveManagement.mapper.UserMapper;
-import com.hipdev.LeaveManagement.repository.RoleRepository;
 import com.hipdev.LeaveManagement.repository.UserRepository;
 import com.hipdev.LeaveManagement.service.UserService;
 import lombok.AccessLevel;
@@ -25,7 +24,6 @@ import java.util.Optional;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserServiceImpl implements UserService {
     UserRepository userRepository;
-    RoleRepository roleRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
 

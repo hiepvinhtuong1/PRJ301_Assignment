@@ -1,13 +1,14 @@
 package com.hipdev.LeaveManagement.service.impl;
 
 import com.hipdev.LeaveManagement.dto.LeaveRequestDTO;
+import com.hipdev.LeaveManagement.dto.request.FilterLeaveRequest;
 import com.hipdev.LeaveManagement.dto.request.leave_request.CreateLeaveRequest;
+import com.hipdev.LeaveManagement.dto.request.leave_request.UpdateLeaveRequest;
 import com.hipdev.LeaveManagement.entity.LeaveRequest;
 import com.hipdev.LeaveManagement.entity.User;
 import com.hipdev.LeaveManagement.exception.AppException;
 import com.hipdev.LeaveManagement.exception.ErrorCode;
 import com.hipdev.LeaveManagement.mapper.LeaveRequestMapper;
-import com.hipdev.LeaveManagement.mapper.UserMapper;
 import com.hipdev.LeaveManagement.repository.LeaveRequestRepository;
 import com.hipdev.LeaveManagement.repository.UserRepository;
 import com.hipdev.LeaveManagement.service.LeaveRequestService;
@@ -15,13 +16,13 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
@@ -50,8 +51,9 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         return leaveRequestMapper.toDto(existedLeaveRequest);
     }
 
-
-    public Page<LeaveRequestDTO> getLeaveRequestByUsername(int page, int size) {
+    @Override
+    @PreAuthorize("hasAuthority('READ_REQUEST')")
+    public Page<LeaveRequestDTO> getYourOwnRequest(int page, int size, FilterLeaveRequest filterLeaveRequest) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -61,25 +63,33 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 () -> new AppException(ErrorCode.USER_NOT_EXISTED)
         );
 
-        if (existedUser.getEmployee() == null || existedUser.getEmployee().getCreatedRequests() == null) {
-            return new PageImpl<>(List.of(), PageRequest.of(page, size), 0); // Trả về trang rỗng
+        if (existedUser.getEmployee() == null) {
+            return new PageImpl<>(List.of(), PageRequest.of(page, size), 0); // Trả về trang rỗng nếu không có Employee
         }
 
-        // Lấy danh sách yêu cầu nghỉ phép
-        List<LeaveRequest> leaveRequests = existedUser.getEmployee().getCreatedRequests();
-        List<LeaveRequestDTO> leaveRequestDTOs = leaveRequestMapper.toDtos(leaveRequests);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
-        // Tạo phân trang thủ công
-        int start = Math.min((int) PageRequest.of(page, size).getOffset(), leaveRequestDTOs.size());
-        int end = Math.min(start + size, leaveRequestDTOs.size());
-        List<LeaveRequestDTO> pagedList = leaveRequestDTOs.subList(start, end);
 
-        return new PageImpl<>(pagedList, PageRequest.of(page, size), leaveRequestDTOs.size());
+
+        Page<LeaveRequest> leaveRequests = leaveRequestRepository.findByFilters(
+                filterLeaveRequest.getStatus(),
+                filterLeaveRequest.getStartDate(),
+                filterLeaveRequest.getEndDate(),
+                existedUser.getEmployee().getEmployeeId(),
+                filterLeaveRequest.getProcessorId(),
+                pageable);
+
+
+        return leaveRequests.map(leaveRequestMapper::toDto);
     }
 
 
     @Override
+    @PreAuthorize("hasAuthority('CREATE_REQUEST')")
     public LeaveRequestDTO createLeaveRequest(CreateLeaveRequest request) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        User existedUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         if (Objects.isNull(request.getStartDate()) || Objects.isNull(request.getEndDate())) {
             throw new AppException(ErrorCode.LEAVE_REQUEST_DATE_NULL);
         }
@@ -87,17 +97,13 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             throw new AppException(ErrorCode.LEAVE_REQUEST_INVALID_DATE_RANGE);
         }
 
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        User existedUser = userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
         LeaveRequest leaveRequest = LeaveRequest.builder()
                 .title(request.getTitle())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .reason(request.getReason())
                 .creator(existedUser.getEmployee())
-                .status(LeaveRequest.Status.Pending)
+                .status("PENDING")
                 .build();
         leaveRequest = leaveRequestRepository.save(leaveRequest);
 
@@ -105,12 +111,60 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     @Override
-    public LeaveRequestDTO updateLeaveRequest(LeaveRequestDTO leaveRequestDTO) {
-        return null;
+    @PreAuthorize("hasAuthority('UPDATE_REQUEST')")
+    public LeaveRequestDTO updateLeaveRequest(UpdateLeaveRequest request) {
+        validateUpdateRequest(request);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var existedUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        LeaveRequest  existedLeaveRequest = leaveRequestRepository.findById(request.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.LEAVEREQUEST_NOT_FOUND));
+
+        existedLeaveRequest.builder()
+                .title(request.getTitle())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .reason(request.getReason())
+                .build();
+        LeaveRequest leaveRequest = leaveRequestRepository.save(existedLeaveRequest);
+
+        return leaveRequestMapper.toDto(leaveRequest);
     }
 
     @Override
     public Void deleteLeaveRequest(Long leaveRequestId) {
         return null;
+    }
+
+    private void validateUpdateRequest(UpdateLeaveRequest request) {
+        // Kiểm tra các trường bắt buộc
+        if (request.getId() == null ) {
+            throw new IllegalArgumentException("Id cannot be empty");
+        }
+
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Title cannot be empty");
+        }
+        if (request.getReason() == null || request.getReason().trim().isEmpty()) {
+            throw new IllegalArgumentException("Reason cannot be empty");
+        }
+        if (request.getStartDate() == null) {
+            throw new IllegalArgumentException("Start date cannot be null");
+        }
+        if (request.getEndDate() == null) {
+            throw new IllegalArgumentException("End date cannot be null");
+        }
+
+        // Kiểm tra startDate phải trước endDate
+        if (request.getStartDate().isAfter(request.getEndDate())) {
+            throw new IllegalArgumentException("Start date must be before end date");
+        }
+
+        // Kiểm tra startDate không được trước ngày hiện tại
+        if (request.getStartDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Start date cannot be in the past");
+        }
     }
 }

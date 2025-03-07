@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import "bootstrap/dist/css/bootstrap.min.css"; // Ensure Bootstrap is imported
-import { FaFacebookF, FaTwitter, FaLinkedinIn, FaGoogle } from "react-icons/fa"; // Social media icons
+import "bootstrap/dist/css/bootstrap.min.css";
+import { FaFacebookF, FaTwitter, FaLinkedinIn } from "react-icons/fa";
 import "./login.css";
 import ApiService from "../../service/AppService";
+import { useNavigate } from "react-router-dom"; // Thêm useNavigate để điều hướng
 
 const Login = () => {
   const [loginRequest, setLoginRequest] = useState({
     username: "",
     password: "",
   });
+  const navigate = useNavigate(); // Khởi tạo useNavigate
 
   const handleInputChange = (e) => {
     const name = e.target.name;
@@ -21,11 +23,20 @@ const Login = () => {
 
     try {
       const response = await ApiService.loginUser(loginRequest);
-      if (response.code === 200) {
-        console.log("sucess");
+      console.log(response);
+      if (response?.data?.code === 200) {
+        // Lưu token vào localStorage
+        localStorage.setItem("TOKEN", response.data?.data?.token);
+        console.log("Token stored:", localStorage.getItem("TOKEN"));
+        console.log("Login successful");
+
+        // Điều hướng đến trang chính (hoặc trang bạn muốn) sau khi đăng nhập thành công
+        navigate("/profile"); // Ví dụ: chuyển hướng đến trang dashboard
       }
     } catch (error) {
-      console.log(error);
+      console.error("Login failed:", error);
+      // Có thể thêm thông báo lỗi cho người dùng
+      alert("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
     }
   };
 
@@ -46,26 +57,18 @@ const Login = () => {
                 <p className="lead fw-normal mb-0 me-3">Sign in with</p>
                 <button
                   type="button"
-                  data-mdb-button-init
-                  data-mdb-ripple-init
                   className="btn btn-primary btn-floating mx-1"
                 >
                   <FaFacebookF />
                 </button>
-
                 <button
                   type="button"
-                  data-mdb-button-init
-                  data-mdb-ripple-init
                   className="btn btn-primary btn-floating mx-1"
                 >
                   <FaTwitter />
                 </button>
-
                 <button
                   type="button"
-                  data-mdb-button-init
-                  data-mdb-ripple-init
                   className="btn btn-primary btn-floating mx-1"
                 >
                   <FaLinkedinIn />
@@ -76,22 +79,19 @@ const Login = () => {
                 <p className="text-center fw-bold mx-3 mb-0">Or</p>
               </div>
 
-              {/* Email input */}
               <div data-mdb-input-init className="form-outline mb-4">
                 <input
                   type="text"
                   id="form3Example3"
                   name="username"
                   className="form-control form-control-lg"
-                  placeholder="username"
+                  placeholder="Username"
                   value={loginRequest.username}
                   onChange={handleInputChange}
                   required
                 />
-                {/* <label className="form-label" htmlFor="form3Example3">Email address</label> */}
               </div>
 
-              {/* Password input */}
               <div data-mdb-input-init className="form-outline mb-3">
                 <input
                   type="password"
@@ -103,13 +103,11 @@ const Login = () => {
                   onChange={handleInputChange}
                   required
                 />
-                {/* <label className="form-label" htmlFor="form3Example4">Password</label> */}
               </div>
+
               <div className="text-center text-lg-start mt-4 pt-2">
                 <button
                   type="submit"
-                  data-mdb-button-init
-                  data-mdb-ripple-init
                   className="btn btn-primary btn-lg"
                   style={{ paddingLeft: "2.5rem", paddingRight: "2.5rem" }}
                 >

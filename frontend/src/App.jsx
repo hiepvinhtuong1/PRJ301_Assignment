@@ -1,4 +1,3 @@
-import "./App.css";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Login from "./components/login/Login";
 import NavBar from "./components/common/NavBar";
@@ -6,7 +5,6 @@ import EmployeeProfile from "./components/profile/ProFile.jsx";
 import EmployeeList from "./components/employee/EmployeeList.jsx";
 import LeaveRequestList from "./components/leave_request/LeaveRequestList.jsx";
 import LeaveRequestUpdate from "./components/leave_request/LeaveReqeustUpdate.jsx";
-import LeaveRequestCreate from "./components/leave_request/LeaveRequestCreate.jsx";
 import LeaveRequestHandle from "./components/leave_request/LeaveRequestHandle.jsx";
 import Calendar from "./components/calendar/Calendar.jsx";
 import "../node_modules/bootstrap/dist/css/bootstrap.min.css";
@@ -30,10 +28,7 @@ function App() {
             path="/leave_request/list"
             element={<LeaveRequestList />}
           ></Route>
-          <Route
-            path="/leave_request/create"
-            element={<LeaveRequestCreate />}
-          ></Route>
+          s
           <Route
             path="/leave_request/handle"
             element={<LeaveRequestHandle />}
