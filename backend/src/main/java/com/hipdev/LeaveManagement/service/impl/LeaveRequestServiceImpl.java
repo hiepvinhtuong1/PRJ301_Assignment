@@ -3,6 +3,7 @@ package com.hipdev.LeaveManagement.service.impl;
 import com.hipdev.LeaveManagement.dto.LeaveRequestDTO;
 import com.hipdev.LeaveManagement.dto.request.FilterLeaveRequest;
 import com.hipdev.LeaveManagement.dto.request.leave_request.CreateLeaveRequest;
+import com.hipdev.LeaveManagement.dto.request.leave_request.UpdateLeaveRequest;
 import com.hipdev.LeaveManagement.entity.LeaveRequest;
 import com.hipdev.LeaveManagement.entity.User;
 import com.hipdev.LeaveManagement.exception.AppException;
@@ -17,9 +18,11 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
@@ -108,12 +111,60 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     @Override
-    public LeaveRequestDTO updateLeaveRequest(LeaveRequestDTO leaveRequestDTO) {
-        return null;
+    @PreAuthorize("hasAuthority('UPDATE_REQUEST')")
+    public LeaveRequestDTO updateLeaveRequest(UpdateLeaveRequest request) {
+        validateUpdateRequest(request);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var existedUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        LeaveRequest  existedLeaveRequest = leaveRequestRepository.findById(request.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.LEAVEREQUEST_NOT_FOUND));
+
+        existedLeaveRequest.builder()
+                .title(request.getTitle())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .reason(request.getReason())
+                .build();
+        LeaveRequest leaveRequest = leaveRequestRepository.save(existedLeaveRequest);
+
+        return leaveRequestMapper.toDto(leaveRequest);
     }
 
     @Override
     public Void deleteLeaveRequest(Long leaveRequestId) {
         return null;
+    }
+
+    private void validateUpdateRequest(UpdateLeaveRequest request) {
+        // Kiểm tra các trường bắt buộc
+        if (request.getId() == null ) {
+            throw new IllegalArgumentException("Id cannot be empty");
+        }
+
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Title cannot be empty");
+        }
+        if (request.getReason() == null || request.getReason().trim().isEmpty()) {
+            throw new IllegalArgumentException("Reason cannot be empty");
+        }
+        if (request.getStartDate() == null) {
+            throw new IllegalArgumentException("Start date cannot be null");
+        }
+        if (request.getEndDate() == null) {
+            throw new IllegalArgumentException("End date cannot be null");
+        }
+
+        // Kiểm tra startDate phải trước endDate
+        if (request.getStartDate().isAfter(request.getEndDate())) {
+            throw new IllegalArgumentException("Start date must be before end date");
+        }
+
+        // Kiểm tra startDate không được trước ngày hiện tại
+        if (request.getStartDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Start date cannot be in the past");
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.hipdev.LeaveManagement.controller;
 import com.hipdev.LeaveManagement.dto.LeaveRequestDTO;
 import com.hipdev.LeaveManagement.dto.request.FilterLeaveRequest;
 import com.hipdev.LeaveManagement.dto.request.leave_request.CreateLeaveRequest;
+import com.hipdev.LeaveManagement.dto.request.leave_request.UpdateLeaveRequest;
 import com.hipdev.LeaveManagement.dto.response.ApiResponse;
 import com.hipdev.LeaveManagement.service.LeaveRequestService;
 import jakarta.validation.Valid;
@@ -38,7 +39,7 @@ public class LeaveRequestController {
                 .build());
     }
 
-    @PostMapping("/create")
+    @PostMapping
     public ResponseEntity<ApiResponse<LeaveRequestDTO>> createLeaveRequest(
             @RequestBody @Valid CreateLeaveRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -46,6 +47,18 @@ public class LeaveRequestController {
 
         return ResponseEntity.ok(ApiResponse.<LeaveRequestDTO>builder()
                 .message("Leave request created successfully")
+                .data(leaveRequestDTO)
+                .build());
+    }
+
+    @PutMapping
+    public ResponseEntity<ApiResponse<LeaveRequestDTO>> updateLeaveRequest(
+            @RequestBody @Valid UpdateLeaveRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        LeaveRequestDTO leaveRequestDTO = leaveRequestService.updateLeaveRequest(request);
+
+        return ResponseEntity.ok(ApiResponse.<LeaveRequestDTO>builder()
+                .message("Leave request updated successfully")
                 .data(leaveRequestDTO)
                 .build());
     }

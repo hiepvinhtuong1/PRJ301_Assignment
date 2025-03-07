@@ -9,7 +9,7 @@ import java.time.LocalDate;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LeaveRequestDTO {
     private Long id;
-    private String reason;
+    private String title;
     private LocalDate startDate;
     private LocalDate endDate;
     private String status;
