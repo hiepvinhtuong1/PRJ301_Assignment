@@ -5,6 +5,8 @@ import { FaEye, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import { Modal, Button } from "react-bootstrap";
 import useLeaveRequests from "../../hooks/useLeaveRequests";
 import useCreateLeaveRequest from "../../hooks/useCreateLeaveRequest";
+import useUpdateRequest from "../../hooks/useUpdateLeaveRequest";
+import useDeleteRequest from "../../hooks/useDeleteLeaveRequest";
 
 const LeaveRequestList = () => {
   const navigate = useNavigate();
@@ -23,6 +25,7 @@ const LeaveRequestList = () => {
         current: parseInt(params.get("page")) || 1,
         pageSize: parseInt(params.get("pageSize")) || 10,
       },
+      id: params.get("id") || null,
     };
   };
 
@@ -31,7 +34,7 @@ const LeaveRequestList = () => {
   const { requests, totalPages, loading, error, fetchLeaveRequests } =
     useLeaveRequests();
 
-  const updateUrl = (newFilters, newPagination) => {
+  const updateUrl = (newFilters, newPagination, id = null) => {
     const params = new URLSearchParams();
     if (newFilters.searchText) params.set("searchText", newFilters.searchText);
     if (newFilters.startDate) params.set("startDate", newFilters.startDate);
@@ -39,6 +42,7 @@ const LeaveRequestList = () => {
     if (newFilters.status) params.set("status", newFilters.status);
     params.set("page", newPagination.current);
     params.set("pageSize", newPagination.pageSize);
+    if (id) params.set("id", id);
 
     navigate({
       pathname: location.pathname,
@@ -77,23 +81,86 @@ const LeaveRequestList = () => {
   };
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [editId, setEditId] = useState(null);
+
+  // Sử dụng state riêng cho create
   const {
-    leaveRequest,
-    handleChange,
     createLeaveRequest,
+    handleChange: handleCreateChange,
+    submitCreateLeaveRequest, // Sử dụng tên mới
     loading: createLoading,
     error: createError,
+    reset: resetCreate,
   } = useCreateLeaveRequest();
 
-  const handleSubmit = (e) => {
+  // Sử dụng state riêng cho update
+  const {
+    updateLeaveRequest,
+    handleChange: handleUpdateChange,
+    updateRequest,
+    loading: updateLoading,
+    error: updateError,
+    success: updateSuccess,
+    reset: resetUpdate,
+  } = useUpdateRequest();
+
+  // Sử dụng hook để xóa
+  const {
+    deleteRequest,
+    loading: deleteLoading,
+    error: deleteError,
+    success: deleteSuccess,
+    reset: resetDelete,
+  } = useDeleteRequest();
+
+  const handleCreateSubmit = (e) => {
     e.preventDefault();
-    createLeaveRequest(() => {
+    submitCreateLeaveRequest(() => {
+      // Sử dụng tên mới
       setShowCreateModal(false);
-      const newPagination = { ...pagination, current: 1 }; // Chuyển về trang 1
+      const newPagination = { ...pagination, current: 1 };
       setPagination(newPagination);
-      updateUrl(filters, newPagination); // Cập nhật URL
-      fetchLeaveRequests(filters, 1, newPagination.pageSize); // Gọi lại API để cập nhật dữ liệu
+      updateUrl(filters, newPagination);
+      fetchLeaveRequests(filters, 1, newPagination.pageSize);
+      resetCreate();
     });
+  };
+
+  const handleUpdateSubmit = (e) => {
+    e.preventDefault();
+    updateRequest(editId, () => {
+      setShowUpdateModal(false);
+      const newPagination = { ...pagination, current: 1 };
+      setPagination(newPagination);
+      updateUrl(filters, newPagination, editId);
+      fetchLeaveRequests(filters, 1, newPagination.pageSize);
+      setEditId(null);
+      resetUpdate();
+    });
+  };
+
+  const handleEditClick = (request) => {
+    console.log("Editing request:", request);
+    setEditId(request?.id);
+    updateLeaveRequest.title = request.title;
+    updateLeaveRequest.reason = request.reason;
+    updateLeaveRequest.startDate = request.startDate;
+    updateLeaveRequest.endDate = request.endDate;
+    setShowUpdateModal(true);
+  };
+
+  const handleDeleteClick = (id) => {
+    if (window.confirm("Are you sure you want to delete this leave request?")) {
+      deleteRequest(id, () => {
+        // Sau khi xóa thành công, giữ nguyên trang hiện tại và làm mới danh sách
+        const newPagination = { ...pagination }; // Giữ nguyên current
+        setPagination(newPagination);
+        updateUrl(filters, newPagination); // Không đẩy id lên URL
+        fetchLeaveRequests(filters, pagination.current, newPagination.pageSize);
+        resetDelete();
+      });
+    }
   };
 
   return (
@@ -189,19 +256,17 @@ const LeaveRequestList = () => {
                 </Button>
               </td>
               <td>
-                <Link
-                  to={`/leave-request/${request.id}`}
-                  className="btn btn-info btn-sm me-2"
-                >
-                  <FaEye />
-                </Link>
-                <Link
-                  to={`/leave_request/update/${request.id}`}
+                <button
+                  onClick={() => handleEditClick(request)}
                   className="btn btn-warning btn-sm me-2"
                 >
                   <FaEdit />
-                </Link>
-                <button className="btn btn-danger btn-sm">
+                </button>
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => handleDeleteClick(request.id)}
+                  disabled={deleteLoading}
+                >
                   <FaTrash />
                 </button>
               </td>
@@ -244,6 +309,7 @@ const LeaveRequestList = () => {
         </Button>
       </div>
 
+      {/* Modal cho View Reason */}
       <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>{modalContent.title}</Modal.Title>
@@ -266,6 +332,7 @@ const LeaveRequestList = () => {
         </Modal.Footer>
       </Modal>
 
+      {/* Modal cho Create */}
       <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Request Leave</Modal.Title>
@@ -274,15 +341,15 @@ const LeaveRequestList = () => {
           {createError && (
             <div className="alert alert-danger">{createError}</div>
           )}
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleCreateSubmit}>
             <div className="mb-2">
               <label className="form-label">Title</label>
               <input
                 type="text"
                 className="form-control"
                 name="title"
-                value={leaveRequest.title}
-                onChange={handleChange}
+                value={createLeaveRequest.title}
+                onChange={handleCreateChange}
                 required
                 disabled={createLoading}
               />
@@ -293,8 +360,8 @@ const LeaveRequestList = () => {
                 type="date"
                 className="form-control"
                 name="startDate"
-                value={leaveRequest.startDate}
-                onChange={handleChange}
+                value={createLeaveRequest.startDate}
+                onChange={handleCreateChange}
                 required
                 disabled={createLoading}
               />
@@ -305,8 +372,8 @@ const LeaveRequestList = () => {
                 type="date"
                 className="form-control"
                 name="endDate"
-                value={leaveRequest.endDate}
-                onChange={handleChange}
+                value={createLeaveRequest.endDate}
+                onChange={handleCreateChange}
                 required
                 disabled={createLoading}
               />
@@ -316,8 +383,8 @@ const LeaveRequestList = () => {
               <textarea
                 className="form-control"
                 name="reason"
-                value={leaveRequest.reason}
-                onChange={handleChange}
+                value={createLeaveRequest.reason}
+                onChange={handleCreateChange}
                 required
                 disabled={createLoading}
               ></textarea>
@@ -330,6 +397,84 @@ const LeaveRequestList = () => {
                 variant="danger"
                 onClick={() => setShowCreateModal(false)}
                 disabled={createLoading}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </Modal.Body>
+      </Modal>
+
+      {/* Modal cho Update */}
+      <Modal show={showUpdateModal} onHide={() => setShowUpdateModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Leave Request</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {updateError && (
+            <div className="alert alert-danger">{updateError}</div>
+          )}
+          {updateSuccess && (
+            <div className="alert alert-success">
+              Leave request updated successfully!
+            </div>
+          )}
+          <form onSubmit={handleUpdateSubmit}>
+            <div className="mb-2">
+              <label className="form-label">Title</label>
+              <input
+                type="text"
+                className="form-control"
+                name="title"
+                value={updateLeaveRequest.title}
+                onChange={handleUpdateChange}
+                required
+                disabled={updateLoading}
+              />
+            </div>
+            <div className="mb-2">
+              <label className="form-label">Start Date</label>
+              <input
+                type="date"
+                className="form-control"
+                name="startDate"
+                value={updateLeaveRequest.startDate}
+                onChange={handleUpdateChange}
+                required
+                disabled={updateLoading}
+              />
+            </div>
+            <div className="mb-2">
+              <label className="form-label">End Date</label>
+              <input
+                type="date"
+                className="form-control"
+                name="endDate"
+                value={updateLeaveRequest.endDate}
+                onChange={handleUpdateChange}
+                required
+                disabled={updateLoading}
+              />
+            </div>
+            <div className="mb-2">
+              <label className="form-label">Reason</label>
+              <textarea
+                className="form-control"
+                name="reason"
+                value={updateLeaveRequest.reason}
+                onChange={handleUpdateChange}
+                required
+                disabled={updateLoading}
+              ></textarea>
+            </div>
+            <div className="d-flex justify-content-between mt-3">
+              <Button type="submit" variant="primary" disabled={updateLoading}>
+                {updateLoading ? "Updating..." : "Update"}
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => setShowUpdateModal(false)}
+                disabled={updateLoading}
               >
                 Cancel
               </Button>

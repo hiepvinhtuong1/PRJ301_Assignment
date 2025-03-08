@@ -9,10 +9,10 @@
     @Data
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public class UpdateLeaveRequest {
-        private Long id;
         private String title;
         private String reason;
         private LocalDate startDate;
         private LocalDate endDate;
+        private String status;
     }
 

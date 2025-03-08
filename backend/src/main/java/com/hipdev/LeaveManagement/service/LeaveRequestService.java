@@ -9,10 +9,12 @@ import org.springframework.data.domain.Page;
 import java.util.List;
 
 public interface LeaveRequestService {
-    public List<LeaveRequestDTO> getAllLeaveRequests();
-    public LeaveRequestDTO getLeaveRequestById(Long id);
-    public Page<LeaveRequestDTO> getYourOwnRequest(int page, int size, FilterLeaveRequest filterLeaveRequest);
-    public LeaveRequestDTO createLeaveRequest(CreateLeaveRequest request);
-    public LeaveRequestDTO updateLeaveRequest(UpdateLeaveRequest leaveRequestDTO);
-    public Void deleteLeaveRequest(Long leaveRequestId);
+     List<LeaveRequestDTO> getAllLeaveRequests();
+     LeaveRequestDTO getLeaveRequestById(Long id);
+     Page<LeaveRequestDTO> getYourOwnRequest(int page, int size, FilterLeaveRequest filterLeaveRequest);
+     LeaveRequestDTO createLeaveRequest(CreateLeaveRequest request);
+     LeaveRequestDTO updateLeaveRequest(UpdateLeaveRequest leaveRequestDTO, Long id);
+     Void deleteLeaveRequest(Long leaveRequestId);
+     Page<LeaveRequestDTO> getEmployeeRequestsAfterToday(int page, int size);
+     LeaveRequestDTO processLeaveRequest(Long leaveRequestId, UpdateLeaveRequest updateLeaveRequest);
 }

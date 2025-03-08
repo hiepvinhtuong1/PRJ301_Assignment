@@ -13,6 +13,7 @@ public class LeaveRequestDTO {
     private LocalDate startDate;
     private LocalDate endDate;
     private String status;
+    private String reason;
     private String comment;
     private EmployeeDTO creator;
     private EmployeeDTO processor;

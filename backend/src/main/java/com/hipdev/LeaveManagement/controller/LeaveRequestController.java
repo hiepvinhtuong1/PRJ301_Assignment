@@ -33,7 +33,7 @@ public class LeaveRequestController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         Page<LeaveRequestDTO> leaveRequests = leaveRequestService.getYourOwnRequest(page - 1, size, filterLeaveRequest);
-            return ResponseEntity.ok(ApiResponse.<Page<LeaveRequestDTO>>builder()
+        return ResponseEntity.ok(ApiResponse.<Page<LeaveRequestDTO>>builder()
                 .message("List of leave requests by username with pagination")
                 .data(leaveRequests)
                 .build());
@@ -51,15 +51,32 @@ public class LeaveRequestController {
                 .build());
     }
 
-    @PutMapping
+    @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<LeaveRequestDTO>> updateLeaveRequest(
-            @RequestBody @Valid UpdateLeaveRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        LeaveRequestDTO leaveRequestDTO = leaveRequestService.updateLeaveRequest(request);
-
+            @RequestBody @Valid UpdateLeaveRequest request
+            , @PathVariable Long id) {
+        LeaveRequestDTO leaveRequestDTO = leaveRequestService.updateLeaveRequest(request, id);
         return ResponseEntity.ok(ApiResponse.<LeaveRequestDTO>builder()
                 .message("Leave request updated successfully")
                 .data(leaveRequestDTO)
+                .build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteLeaveRequest(@PathVariable Long id) {
+        leaveRequestService.deleteLeaveRequest(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("req-of-emp")
+    public ResponseEntity<ApiResponse<Page<LeaveRequestDTO>>> getLeaveRequestByEmp(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<LeaveRequestDTO> list = leaveRequestService.getEmployeeRequestsAfterToday(page-1, size);
+        return ResponseEntity.ok(ApiResponse.<Page<LeaveRequestDTO>>builder()
+                .message("List of leave requests by username with pagination")
+                .data(list)
                 .build());
     }
 }

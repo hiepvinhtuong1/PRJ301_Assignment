@@ -1,9 +1,9 @@
 package com.hipdev.LeaveManagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,7 +11,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "employees")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Employee {
@@ -36,6 +37,7 @@ public class Employee {
     private Gender gender;
 
     @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL) // Liên kết 1-1 với User
+    @JsonManagedReference
     private User user;
 
     public enum Gender {
@@ -44,6 +46,7 @@ public class Employee {
 
     @ManyToOne
     @JoinColumn(name = "leader_id") // Employee có thể có 1 leader
+    @JsonManagedReference
     private Employee leader;
 
     @OneToMany(mappedBy = "leader", cascade = CascadeType.ALL) // 1 leader quản lý nhiều employee
@@ -52,16 +55,18 @@ public class Employee {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @ManyToOne
-    @JoinColumn(name = "department_id") // 1 Employee thuộc 1 Department
-    private Department department;
+//    @ManyToOne
+//    @JoinColumn(name = "department_id") // 1 Employee thuộc 1 Department
+//    private Department department;
 
-    @OneToOne(mappedBy = "manager", cascade = CascadeType.ALL) // 1 Employee làm manager của 1 Department
-    private Department managedDepartment;
+//    @OneToOne(mappedBy = "manager", cascade = CascadeType.ALL) // 1 Employee làm manager của 1 Department
+//    private Department managedDepartment;
 
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL) // 1 Employee tạo nhiều LeaveRequest
+    @JsonBackReference
     private List<LeaveRequest> createdRequests;
 
     @OneToMany(mappedBy = "processor", cascade = CascadeType.ALL) // 1 Leader or Manager  xử lý nhiều LeaveRequest
+    @JsonBackReference
     private List<LeaveRequest> processedRequests;
 }

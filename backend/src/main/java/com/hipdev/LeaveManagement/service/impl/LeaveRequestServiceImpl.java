@@ -4,11 +4,13 @@ import com.hipdev.LeaveManagement.dto.LeaveRequestDTO;
 import com.hipdev.LeaveManagement.dto.request.FilterLeaveRequest;
 import com.hipdev.LeaveManagement.dto.request.leave_request.CreateLeaveRequest;
 import com.hipdev.LeaveManagement.dto.request.leave_request.UpdateLeaveRequest;
+import com.hipdev.LeaveManagement.entity.Employee;
 import com.hipdev.LeaveManagement.entity.LeaveRequest;
 import com.hipdev.LeaveManagement.entity.User;
 import com.hipdev.LeaveManagement.exception.AppException;
 import com.hipdev.LeaveManagement.exception.ErrorCode;
 import com.hipdev.LeaveManagement.mapper.LeaveRequestMapper;
+import com.hipdev.LeaveManagement.repository.EmployeeRepository;
 import com.hipdev.LeaveManagement.repository.LeaveRequestRepository;
 import com.hipdev.LeaveManagement.repository.UserRepository;
 import com.hipdev.LeaveManagement.service.LeaveRequestService;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +37,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     final LeaveRequestRepository leaveRequestRepository;
     final UserRepository userRepository;
     final LeaveRequestMapper leaveRequestMapper;
+    final EmployeeRepository employeeRepository;
 
     @Override
     public List<LeaveRequestDTO> getAllLeaveRequests() {
@@ -68,7 +72,6 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-
 
 
         Page<LeaveRequest> leaveRequests = leaveRequestRepository.findByFilters(
@@ -112,22 +115,31 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
     @Override
     @PreAuthorize("hasAuthority('UPDATE_REQUEST')")
-    public LeaveRequestDTO updateLeaveRequest(UpdateLeaveRequest request) {
+    public LeaveRequestDTO updateLeaveRequest(UpdateLeaveRequest request, Long id) {
         validateUpdateRequest(request);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var existedUser = userRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        LeaveRequest  existedLeaveRequest = leaveRequestRepository.findById(request.getId())
+        LeaveRequest existedLeaveRequest = leaveRequestRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.LEAVEREQUEST_NOT_FOUND));
 
-        existedLeaveRequest.builder()
-                .title(request.getTitle())
-                .startDate(request.getStartDate())
-                .endDate(request.getEndDate())
-                .reason(request.getReason())
-                .build();
+        if (!existedUser.getEmployee().getEmployeeId().equals(existedLeaveRequest.getCreator().getEmployeeId())) {
+            throw new AppException(ErrorCode.REQUEST_NOT_BELONG_YOU);
+        }
+
+        // Kiểm tra trạng thái của LeaveRequest
+        if (existedLeaveRequest.getStatus().equalsIgnoreCase("Approved") ||
+                existedLeaveRequest.getStatus().equalsIgnoreCase("Approved")) {
+            throw new AppException(ErrorCode.LEAVEREQUEST_CANNOT_UPDATE);
+        }
+
+        existedLeaveRequest.setTitle(request.getTitle());
+        existedLeaveRequest.setStartDate(request.getStartDate());
+        existedLeaveRequest.setEndDate(request.getEndDate());
+        existedLeaveRequest.setReason(request.getReason());
+
         LeaveRequest leaveRequest = leaveRequestRepository.save(existedLeaveRequest);
 
         return leaveRequestMapper.toDto(leaveRequest);
@@ -135,15 +147,115 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
     @Override
     public Void deleteLeaveRequest(Long leaveRequestId) {
+        // Lấy thông tin user hiện tại từ SecurityContext
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        // Tìm LeaveRequest theo id
+        LeaveRequest existedLeaveRequest = leaveRequestRepository.findById(leaveRequestId)
+                .orElseThrow(() -> new AppException(ErrorCode.LEAVEREQUEST_NOT_FOUND));
+
+        if (!currentUser.getEmployee().getEmployeeId().equals(existedLeaveRequest.getCreator().getEmployeeId())) {
+            throw new AppException(ErrorCode.REQUEST_NOT_BELONG_YOU);
+        }
+
+        // Kiểm tra trạng thái: không cho phép xóa nếu đã APPROVED hoặc REJECTED
+        if (existedLeaveRequest.getStatus().equalsIgnoreCase("approved") ||
+                existedLeaveRequest.getStatus().equalsIgnoreCase("rejected")) {
+            throw new AppException(ErrorCode.LEAVEREQUEST_CANNOT_DELETE);
+        }
+
+        // Xóa LeaveRequest
+        leaveRequestRepository.delete(existedLeaveRequest);
+
+        // Trả về null theo kiểu Void
         return null;
+    }
+
+    @Override
+    @PreAuthorize("hasAuthority('READ_EMPLOYEE_REQUESTS')")
+    public Page<LeaveRequestDTO> getEmployeeRequestsAfterToday(int page, int size) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+        User leader = userRepository.findByUsername(currentUsername).orElseThrow(
+                () -> new AppException(ErrorCode.USER_NOT_EXISTED)
+        );
+
+        Employee leaderEmployee = leader.getEmployee();
+
+        // Lấy danh sách tất cả nhân viên trong cây phân quyền dưới quyền leader A từ database
+        List<Integer> employeeIds = employeeRepository.findAllEmployeesInHierarchy(leaderEmployee.getEmployeeId());
+
+        // Lấy ngày hiện tại
+        LocalDate today = LocalDate.now();
+
+        // Tạo pageable cho phân trang
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+
+        // Tìm tất cả LeaveRequest của các nhân viên trong cây với startDate > today
+        Page<LeaveRequest> leaveRequests = leaveRequestRepository.findByCreatorEmployeeIdsAndStartDateAfter(
+                employeeIds, today, pageable);
+        return leaveRequests.map(leaveRequestMapper::toDto);
+    }
+
+    @Override
+    @PreAuthorize("hasAuthority('PROCESS_REQUEST')")
+    public LeaveRequestDTO processLeaveRequest(Long requestId, UpdateLeaveRequest request) {
+        // Kiểm tra authentication
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        // Lấy thông tin người dùng hiện tại
+        String currentUsername = authentication.getName();
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        // Lấy LeaveRequest dựa trên requestId
+        LeaveRequest leaveRequest = leaveRequestRepository.findById(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.LEAVEREQUEST_NOT_FOUND));
+
+        // Kiểm tra quyền xử lý: chỉ người có quyền PROCESS_REQUEST và là processor hoặc leader mới được xử lý
+        Employee currentEmployee = currentUser.getEmployee();
+        if (currentEmployee == null) {
+            throw new AppException(ErrorCode.USER_NOT_EMPLOYEE);
+        }
+
+        // Kiểm tra xem currentUser có phải là processor hoặc thuộc cây phân quyền của creator
+        if (!currentEmployee.getEmployeeId().equals(leaveRequest.getProcessor() != null ? leaveRequest.getProcessor().getEmployeeId() : null)) {
+            // Kiểm tra xem currentUser có phải là leader của creator không
+            List<Integer> subordinateIds = employeeRepository.findAllEmployeesInHierarchy(currentEmployee.getEmployeeId());
+            if (!subordinateIds.contains(leaveRequest.getCreator().getEmployeeId().intValue())) {
+                throw new AppException(ErrorCode.UNAUTHORIZED_PROCESS_REQUEST);
+            }
+        }
+
+        // Kiểm tra trạng thái hợp lệ
+        if (request.getStatus() == null ||
+                (!request.getStatus().equalsIgnoreCase("APPROVED") &&
+                        !request.getStatus().equalsIgnoreCase("REJECTED"))) {
+            throw new AppException(ErrorCode.INVALID_STATUS);
+        }
+
+        // Kiểm tra trạng thái hiện tại: chỉ cho phép xử lý nếu đang ở PENDING
+        if (!leaveRequest.getStatus().equalsIgnoreCase("PENDING")) {
+            throw new AppException(ErrorCode.LEAVEREQUEST_CANNOT_PROCESS);
+        }
+
+        // Cập nhật trạng thái
+        leaveRequest.setStatus(request.getStatus());
+        leaveRequest.setProcessor(currentEmployee); // Gán người xử lý hiện tại
+        LeaveRequest updatedLeaveRequest = leaveRequestRepository.save(leaveRequest);
+
+        // Trả về DTO sau khi cập nhật
+        return leaveRequestMapper.toDto(updatedLeaveRequest);
     }
 
     private void validateUpdateRequest(UpdateLeaveRequest request) {
         // Kiểm tra các trường bắt buộc
-        if (request.getId() == null ) {
-            throw new IllegalArgumentException("Id cannot be empty");
-        }
-
         if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
             throw new IllegalArgumentException("Title cannot be empty");
         }

@@ -1,24 +1,23 @@
 package com.hipdev.LeaveManagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "leave_requests")
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class LeaveRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
 
     private String title;
@@ -40,10 +39,12 @@ public class LeaveRequest {
 
     @ManyToOne
     @JoinColumn(name = "creator_id", nullable = false) // Người tạo request
+    @JsonManagedReference
     private Employee creator;
 
     @ManyToOne
     @JoinColumn(name = "processor_id") // Người xử lý request, có thể NULL
+    @JsonManagedReference
     private Employee processor;
 
     @JoinColumn(name = "status", nullable = false)

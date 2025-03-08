@@ -1,15 +1,16 @@
 package com.hipdev.LeaveManagement.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
@@ -22,6 +23,7 @@ public class User {
 
     @OneToOne
     @JoinColumn(name = "employee_id", unique = true) // Liên kết 1-1 với Employee
+    @JsonBackReference
     private Employee employee;
 
     @ManyToMany

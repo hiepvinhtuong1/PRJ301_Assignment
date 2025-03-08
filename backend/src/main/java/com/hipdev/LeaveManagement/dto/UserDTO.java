@@ -11,7 +11,7 @@ import java.util.List;
 public class UserDTO {
     private Integer userId;
     private String username;
-    private DepartmentDTO department;
+ //   private DepartmentDTO department;
     private UserDTO leader;
     private EmployeeDTO employee;
     private List<RoleDTO> roles;
