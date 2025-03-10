@@ -86,18 +86,37 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         return leaveRequests.map(leaveRequestMapper::toDto);
     }
 
-
     @Override
     @PreAuthorize("hasAuthority('CREATE_REQUEST')")
     public LeaveRequestDTO createLeaveRequest(CreateLeaveRequest request) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         User existedUser = userRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
         if (Objects.isNull(request.getStartDate()) || Objects.isNull(request.getEndDate())) {
             throw new AppException(ErrorCode.LEAVE_REQUEST_DATE_NULL);
         }
         if (request.getEndDate().isBefore(request.getStartDate())) {
             throw new AppException(ErrorCode.LEAVE_REQUEST_INVALID_DATE_RANGE);
+        }
+
+        // Kiểm tra ngày bắt đầu phải lớn hơn hoặc bằng ngày hiện tại
+        LocalDate currentDate = LocalDate.now();
+        if (request.getStartDate().isBefore(currentDate)) {
+            throw new AppException(ErrorCode.LEAVE_REQUEST_START_DATE_BEFORE_CURRENT);
+        }
+
+        Pageable pageable = PageRequest.of(0, 1, Sort.by("id").descending());
+
+
+        List<LeaveRequest> approvedRequests = leaveRequestRepository.findByCreatorAndStatusAndEndDateGreaterThanEqual(
+                existedUser.getEmployee(),
+                "Approved".toUpperCase(),
+                request.getStartDate()
+        );
+
+        if (!approvedRequests.isEmpty()) {
+            throw new  AppException(ErrorCode.LEAVE_REQUEST_OVERLAP);
         }
 
         LeaveRequest leaveRequest = LeaveRequest.builder()
@@ -246,7 +265,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         }
 
         // Cập nhật trạng thái
-        leaveRequest.setStatus(request.getStatus());
+        leaveRequest.setStatus(request.getStatus().toUpperCase());
         leaveRequest.setProcessor(currentEmployee); // Gán người xử lý hiện tại
         LeaveRequest updatedLeaveRequest = leaveRequestRepository.save(leaveRequest);
 
