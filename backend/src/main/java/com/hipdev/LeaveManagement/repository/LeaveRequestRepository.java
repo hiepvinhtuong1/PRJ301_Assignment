@@ -35,9 +35,24 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
 
     @Query("SELECT lr FROM LeaveRequest lr " +
             "WHERE lr.creator.employeeId IN :employeeIds " +
-            "AND lr.startDate >= :today")
-    Page<LeaveRequest> findByCreatorEmployeeIdsAndStartDateAfter(
+            "AND lr.startDate > :today " +
+            "AND (:employeeName IS NULL OR :employeeName = '' OR LOWER(lr.creator.fullName) LIKE LOWER(CONCAT('%', :employeeName, '%'))) " +
+            "AND (:status IS NULL OR :status = '' OR lr.status = :status)")
+    Page<LeaveRequest> findByCreatorEmployeeIdsAndStartDateAfterWithFilters(
             @Param("employeeIds") List<Integer> employeeIds,
             @Param("today") LocalDate today,
-            Pageable pageable);
+            @Param("employeeName") String employeeName,
+            @Param("status") String status,
+            Pageable pageable
+    );
+
+    @Query("SELECT lr FROM LeaveRequest lr " +
+            "WHERE lr.creator = :employee " +
+            "AND lr.status = 'APPROVED' " +
+            "AND (lr.startDate <= :endDate AND lr.endDate >= :startDate)")
+    List<LeaveRequest> findApprovedLeaveRequestsByEmployeeAndDateRange(
+            @Param("employee") Employee employee,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 }

@@ -1,14 +1,17 @@
 package com.hipdev.LeaveManagement.service.impl;
 
+import com.hipdev.LeaveManagement.dto.EmployeeDTO;
 import com.hipdev.LeaveManagement.dto.LeaveRequestDTO;
 import com.hipdev.LeaveManagement.dto.request.FilterLeaveRequest;
 import com.hipdev.LeaveManagement.dto.request.leave_request.CreateLeaveRequest;
 import com.hipdev.LeaveManagement.dto.request.leave_request.UpdateLeaveRequest;
+import com.hipdev.LeaveManagement.dto.response.CalendarResponse;
 import com.hipdev.LeaveManagement.entity.Employee;
 import com.hipdev.LeaveManagement.entity.LeaveRequest;
 import com.hipdev.LeaveManagement.entity.User;
 import com.hipdev.LeaveManagement.exception.AppException;
 import com.hipdev.LeaveManagement.exception.ErrorCode;
+import com.hipdev.LeaveManagement.mapper.EmployeeMapper;
 import com.hipdev.LeaveManagement.mapper.LeaveRequestMapper;
 import com.hipdev.LeaveManagement.repository.EmployeeRepository;
 import com.hipdev.LeaveManagement.repository.LeaveRequestRepository;
@@ -25,6 +28,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -38,6 +43,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     final UserRepository userRepository;
     final LeaveRequestMapper leaveRequestMapper;
     final EmployeeRepository employeeRepository;
+    private final EmployeeMapper employeeMapper;
 
     @Override
     public List<LeaveRequestDTO> getAllLeaveRequests() {
@@ -116,7 +122,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         );
 
         if (!approvedRequests.isEmpty()) {
-            throw new  AppException(ErrorCode.LEAVE_REQUEST_OVERLAP);
+            throw new AppException(ErrorCode.LEAVE_REQUEST_OVERLAP);
         }
 
         LeaveRequest leaveRequest = LeaveRequest.builder()
@@ -126,6 +132,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 .reason(request.getReason())
                 .creator(existedUser.getEmployee())
                 .status("PENDING")
+                .createdAt(LocalDateTime.now())
                 .build();
         leaveRequest = leaveRequestRepository.save(leaveRequest);
 
@@ -195,7 +202,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
     @Override
     @PreAuthorize("hasAuthority('READ_EMPLOYEE_REQUESTS')")
-    public Page<LeaveRequestDTO> getEmployeeRequestsAfterToday(int page, int size) {
+    public Page<LeaveRequestDTO> getEmployeeRequestsAfterToday(int page, int size, FilterLeaveRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
         User leader = userRepository.findByUsername(currentUsername).orElseThrow(
@@ -207,17 +214,26 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         // Lấy danh sách tất cả nhân viên trong cây phân quyền dưới quyền leader A từ database
         List<Integer> employeeIds = employeeRepository.findAllEmployeesInHierarchy(leaderEmployee.getEmployeeId());
 
+        for (Integer employeeId : employeeIds) {
+
+        }
         // Lấy ngày hiện tại
         LocalDate today = LocalDate.now();
 
         // Tạo pageable cho phân trang
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
 
+        if (request.getStatus().equalsIgnoreCase("All Status")) {
+            request.setStatus(null);
+        }
+
         // Tìm tất cả LeaveRequest của các nhân viên trong cây với startDate > today
-        Page<LeaveRequest> leaveRequests = leaveRequestRepository.findByCreatorEmployeeIdsAndStartDateAfter(
-                employeeIds, today, pageable);
+        Page<LeaveRequest> leaveRequests = leaveRequestRepository.findByCreatorEmployeeIdsAndStartDateAfterWithFilters(
+                employeeIds, today, request.getFullname(), request.getStatus().toUpperCase(), pageable);
+
         return leaveRequests.map(leaveRequestMapper::toDto);
     }
+
 
     @Override
     @PreAuthorize("hasAuthority('PROCESS_REQUEST')")
@@ -259,9 +275,16 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             throw new AppException(ErrorCode.INVALID_STATUS);
         }
 
-        // Kiểm tra trạng thái hiện tại: chỉ cho phép xử lý nếu đang ở PENDING
-        if (!leaveRequest.getStatus().equalsIgnoreCase("PENDING")) {
-            throw new AppException(ErrorCode.LEAVEREQUEST_CANNOT_PROCESS);
+        if (request.getStatus().toUpperCase().equalsIgnoreCase("APPROVED")) {
+            List<LeaveRequest> approvedRequests = leaveRequestRepository.findByCreatorAndStatusAndEndDateGreaterThanEqual(
+                    leaveRequest.getCreator(),
+                    "Approved".toUpperCase(),
+                    leaveRequest.getStartDate()
+            );
+
+            if (!approvedRequests.isEmpty()) {
+                throw new AppException(ErrorCode.LEAVE_REQUEST_OVERLAP);
+            }
         }
 
         // Cập nhật trạng thái
@@ -271,6 +294,96 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         // Trả về DTO sau khi cập nhật
         return leaveRequestMapper.toDto(updatedLeaveRequest);
+    }
+
+    @Override
+    @PreAuthorize("hasAuthority('READ_EMPLOYEE_REQUESTS')")
+    public List<EmployeeDTO> getEmployeesOfLeader() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+        User leader = userRepository.findByUsername(currentUsername).orElseThrow(
+                () -> new AppException(ErrorCode.USER_NOT_EXISTED)
+        );
+        List<Employee> employeesOfLeader = new ArrayList<>();
+        Employee leaderEmployee = leader.getEmployee();
+
+        // Lấy danh sách tất cả nhân viên trong cây phân quyền dưới quyền leader A từ database
+        List<Integer> employeeIds = employeeRepository.findAllEmployeesInHierarchy(leaderEmployee.getEmployeeId());
+
+        for (Integer employeeId : employeeIds) {
+            Employee employee = employeeRepository.findById(employeeId).orElseThrow(
+                    () -> new AppException(ErrorCode.EMPLOYEE_NOT_EXSITED)
+            );
+            employeesOfLeader.add(employee);
+        }
+        return employeeMapper.toDtos(employeesOfLeader);
+    }
+
+    @Override
+    public List<CalendarResponse> getCalendar(LocalDate startDate, LocalDate endDate) {
+        // Kiểm tra đầu vào
+        if (startDate == null || endDate == null) {
+            throw new AppException(ErrorCode.INVALID_STATUS);
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new AppException(ErrorCode.INVALID_STATUS);
+        }
+
+        // Lấy thông tin leader hiện tại
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+        User manager = userRepository.findByUsername(currentUsername).orElseThrow(
+                () -> new AppException(ErrorCode.USER_NOT_EXISTED)
+        );
+
+        // Lấy danh sách nhân viên dưới quyền leader
+        Employee leaderEmployee = manager.getEmployee();
+        List<Integer> employeeIds = employeeRepository.findAllEmployeesInHierarchy(leaderEmployee.getEmployeeId());
+        List<Employee> employeesOfLeader = new ArrayList<>();
+
+        for (Integer employeeId : employeeIds) {
+            Employee employee = employeeRepository.findById(employeeId).orElseThrow(
+                    () -> new AppException(ErrorCode.EMPLOYEE_NOT_EXSITED)
+            );
+            employeesOfLeader.add(employee);
+        }
+
+        // Khởi tạo danh sách CalendarResponse
+        List<CalendarResponse> calendarResponses = new ArrayList<>();
+
+        // Duyệt qua từng nhân viên để tạo CalendarResponse
+        for (Employee employee : employeesOfLeader) {
+            // Tạo CalendarResponse cho nhân viên
+            CalendarResponse cr = CalendarResponse.builder()
+                    .id(employee.getEmployeeId())
+                    .employeeName(employee.getFullName())
+                    .leaveDays(new ArrayList<>())
+                    .build();
+
+            // Tìm các LeaveRequest đã được phê duyệt trong khoảng thời gian startDate đến endDate
+            List<LeaveRequest> approvedRequests = leaveRequestRepository.findApprovedLeaveRequestsByEmployeeAndDateRange(
+                    employee, startDate, endDate);
+
+            // Duyệt qua các LeaveRequest để lấy danh sách ngày nghỉ
+            List<String> leaveDays = new ArrayList<>();
+            for (LeaveRequest leaveRequest : approvedRequests) {
+                LocalDate currentDate = leaveRequest.getStartDate();
+                while (!currentDate.isAfter(leaveRequest.getEndDate())) {
+                    // Chỉ thêm ngày nếu nằm trong khoảng startDate và endDate
+                    if (!currentDate.isBefore(startDate) && !currentDate.isAfter(endDate)) {
+                        if (!leaveDays.contains(currentDate.toString())) {
+                            leaveDays.add(currentDate.toString()); // Định dạng YYYY-MM-DD
+                        }
+                    }
+                    currentDate = currentDate.plusDays(1);
+                }
+            }
+
+            cr.setLeaveDays(leaveDays);
+            calendarResponses.add(cr);
+        }
+
+        return calendarResponses;
     }
 
     private void validateUpdateRequest(UpdateLeaveRequest request) {

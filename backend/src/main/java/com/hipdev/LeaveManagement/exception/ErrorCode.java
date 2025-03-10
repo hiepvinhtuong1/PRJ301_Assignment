@@ -24,7 +24,8 @@ public enum ErrorCode {
     INVALID_STATUS(1015,"Invalid status" , HttpStatus.BAD_REQUEST ),
     LEAVEREQUEST_CANNOT_PROCESS(1016,"Cannot process leave request" , HttpStatus.BAD_REQUEST ),
     LEAVE_REQUEST_START_DATE_BEFORE_CURRENT(1017,"Leave Request Start Date before current date" , HttpStatus.BAD_REQUEST ),
-    LEAVE_REQUEST_OVERLAP(1018,"Leave Request Overlap" , HttpStatus.BAD_REQUEST ),;
+    LEAVE_REQUEST_OVERLAP(1018,"Leave Request Overlap" , HttpStatus.BAD_REQUEST ),
+    EMPLOYEE_NOT_EXSITED(1019,"Employee Not Exsited" , HttpStatus.BAD_REQUEST ),;
     final private int code;
     final private String message;
     final private HttpStatus status;

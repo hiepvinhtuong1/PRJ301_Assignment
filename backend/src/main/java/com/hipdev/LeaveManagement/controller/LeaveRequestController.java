@@ -1,10 +1,13 @@
 package com.hipdev.LeaveManagement.controller;
 
+import com.hipdev.LeaveManagement.dto.EmployeeDTO;
 import com.hipdev.LeaveManagement.dto.LeaveRequestDTO;
 import com.hipdev.LeaveManagement.dto.request.FilterLeaveRequest;
 import com.hipdev.LeaveManagement.dto.request.leave_request.CreateLeaveRequest;
 import com.hipdev.LeaveManagement.dto.request.leave_request.UpdateLeaveRequest;
 import com.hipdev.LeaveManagement.dto.response.ApiResponse;
+import com.hipdev.LeaveManagement.dto.response.CalendarResponse;
+import com.hipdev.LeaveManagement.entity.Employee;
 import com.hipdev.LeaveManagement.service.LeaveRequestService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Null;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -71,9 +75,10 @@ public class LeaveRequestController {
     @GetMapping("req-of-emp")
     public ResponseEntity<ApiResponse<Page<LeaveRequestDTO>>> getLeaveRequestByEmp(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @ModelAttribute FilterLeaveRequest filterLeaveRequest
     ) {
-        Page<LeaveRequestDTO> list = leaveRequestService.getEmployeeRequestsAfterToday(page - 1, size);
+        Page<LeaveRequestDTO> list = leaveRequestService.getEmployeeRequestsAfterToday(page - 1, size, filterLeaveRequest);
         return ResponseEntity.ok(ApiResponse.<Page<LeaveRequestDTO>>builder()
                 .message("List of leave requests by username with pagination")
                 .data(list)
@@ -84,10 +89,33 @@ public class LeaveRequestController {
     public ResponseEntity<ApiResponse<LeaveRequestDTO>> processLeaveRequest(
             @PathVariable Long id,
             @RequestBody UpdateLeaveRequest updateLeaveRequest
+
     ) {
         LeaveRequestDTO requestDTO = leaveRequestService.processLeaveRequest(id, updateLeaveRequest);
         return ResponseEntity.ok(ApiResponse.<LeaveRequestDTO>builder()
                 .message("Leave request processed successfully")
+                .build());
+    }
+
+    @GetMapping("/employees")
+    public ResponseEntity<ApiResponse<List<EmployeeDTO>>> getLeaveRequestByEmploy(
+    ) {
+        List<EmployeeDTO> response = leaveRequestService.getEmployeesOfLeader();
+        return ResponseEntity.ok(ApiResponse.<List<EmployeeDTO>>builder()
+                .data(response)
+                .message("Get employees of leader successfully")
+                .build());
+    }
+
+    @GetMapping("/calendar")
+    public ResponseEntity<ApiResponse<List<CalendarResponse>>> getCalendar(
+            @RequestParam(defaultValue = "") LocalDate startDate,
+            @RequestParam(defaultValue = "") LocalDate endDate
+    ) {
+        List<CalendarResponse> response = leaveRequestService.getCalendar(startDate, endDate);
+        return ResponseEntity.ok(ApiResponse.<List<CalendarResponse>>builder()
+                .data(response)
+                .message("Get calendar successfully")
                 .build());
     }
 }

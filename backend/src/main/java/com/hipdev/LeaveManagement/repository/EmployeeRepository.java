@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
 
     // Lấy tất cả nhân viên trong cây phân quyền (dùng truy vấn đệ quy SQL)
     @Query(value = "WITH employee_hierarchy AS (\n" +

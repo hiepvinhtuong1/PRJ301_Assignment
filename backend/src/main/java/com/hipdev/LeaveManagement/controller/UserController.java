@@ -1,6 +1,7 @@
 package com.hipdev.LeaveManagement.controller;
 
 
+import com.hipdev.LeaveManagement.dto.EmployeeDTO;
 import com.hipdev.LeaveManagement.dto.UserDTO;
 import com.hipdev.LeaveManagement.dto.response.ApiResponse;
 import com.hipdev.LeaveManagement.service.UserService;
@@ -29,9 +30,9 @@ public class UserController {
                 .build();
     }
 
-    @GetMapping("/{userId}")
-    public ApiResponse<UserDTO> getUserById(@PathVariable String userId){
-        var result = userService.getUserById(userId);
+    @GetMapping("/my-info")
+    public ApiResponse<UserDTO> getMyInfo(){
+        var result = userService.getMyInfo();
         return ApiResponse.<UserDTO>builder()
                 .code(200)
                 .message("Success")

@@ -8,6 +8,6 @@ import java.util.List;
 @Data
 @Mapper
 public class RoleDTO {
-    private String name;
+    private String roleName;
     private List<PermissionDTO> permissions;
 }
