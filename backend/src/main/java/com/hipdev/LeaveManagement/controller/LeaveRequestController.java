@@ -73,10 +73,21 @@ public class LeaveRequestController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<LeaveRequestDTO> list = leaveRequestService.getEmployeeRequestsAfterToday(page-1, size);
+        Page<LeaveRequestDTO> list = leaveRequestService.getEmployeeRequestsAfterToday(page - 1, size);
         return ResponseEntity.ok(ApiResponse.<Page<LeaveRequestDTO>>builder()
                 .message("List of leave requests by username with pagination")
                 .data(list)
+                .build());
+    }
+
+    @PutMapping("/process/{id}")
+    public ResponseEntity<ApiResponse<LeaveRequestDTO>> processLeaveRequest(
+            @PathVariable Long id,
+            @RequestBody UpdateLeaveRequest updateLeaveRequest
+    ) {
+        LeaveRequestDTO requestDTO = leaveRequestService.processLeaveRequest(id, updateLeaveRequest);
+        return ResponseEntity.ok(ApiResponse.<LeaveRequestDTO>builder()
+                .message("Leave request processed successfully")
                 .build());
     }
 }

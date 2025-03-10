@@ -1,5 +1,6 @@
 package com.hipdev.LeaveManagement.repository;
 
+import com.hipdev.LeaveManagement.entity.Employee;
 import com.hipdev.LeaveManagement.entity.LeaveRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,9 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
             @Param("creatorId") Integer creatorId,
             @Param("processorId") Integer processorId,
             Pageable pageable);
+
+    // Phương thức tự động tạo dựa trên quy ước đặt tên
+    List<LeaveRequest> findByCreatorAndStatusAndEndDateGreaterThanEqual(Employee creator, String status, LocalDate date);
 
     @Query("SELECT lr FROM LeaveRequest lr " +
             "WHERE lr.creator.employeeId IN :employeeIds " +
