@@ -1,5 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
+import apiClient from "../utils/apiClient"; // Import apiClient để thay thế axios
+import { showErrorToast, showSuccessToast } from "../utils/toastUtils"; // Import toast utils
 
 const useUpdateRequest = () => {
   const [updateLeaveRequest, setUpdateLeaveRequest] = useState({
@@ -8,6 +9,7 @@ const useUpdateRequest = () => {
     endDate: "",
     reason: "",
   });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -22,25 +24,16 @@ const useUpdateRequest = () => {
     setSuccess(false);
 
     try {
-      console.log("Data before updating:", updateLeaveRequest);
-      const response = await axios.put(
-        `http://localhost:8081/hiep/leave-requests/${id}`,
-        updateLeaveRequest,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("TOKEN")}`,
-            "Content-Type": "application/json; charset=utf-8",
-          },
-        }
-      );
+      const response = await apiClient.put(`/leave-requests/${id}`, updateLeaveRequest);
 
       setSuccess(true);
+      showSuccessToast("Leave request updated successfully!");
 
       if (onSuccess) onSuccess(response.data);
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Failed to update leave request. Please try again.";
       setError(errorMessage);
-      console.error("Error updating leave request:", err);
+      showErrorToast(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -58,7 +51,7 @@ const useUpdateRequest = () => {
     setSuccess(false);
   };
 
-  return { updateLeaveRequest, handleChange, updateRequest, loading, error, success, reset };
+  return { updateLeaveRequest, handleChange, updateRequest, loading, error, success, reset, setUpdateLeaveRequest };
 };
 
 export default useUpdateRequest;

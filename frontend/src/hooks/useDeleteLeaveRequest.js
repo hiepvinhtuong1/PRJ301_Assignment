@@ -1,5 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
+import apiClient from "../utils/apiClient";
+import { showErrorToast, showSuccessToast } from "../utils/toastUtils"; // Import toast utils
 
 const useDeleteRequest = () => {
   const [loading, setLoading] = useState(false);
@@ -13,34 +14,25 @@ const useDeleteRequest = () => {
 
     try {
       console.log(`Deleting leave request with id: ${id}`);
-      await axios.delete(`http://localhost:8081/hiep/leave-requests/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("TOKEN")}`,
-          "Content-Type": "application/json; charset=utf-8",
-        },
-      });
+      await apiClient.delete(`/leave-requests/${id}`);
 
       setSuccess(true);
+      showSuccessToast("Leave request deleted successfully! ✅"); // Hiển thị toast thành công
 
       if (onSuccess) onSuccess();
     } catch (err) {
+      console.log("======================================", err)
       const errorMessage =
         err.response?.data?.message ||
         "Failed to delete leave request. Please try again.";
       setError(errorMessage);
-      console.error("Error deleting leave request:", err);
+      showErrorToast(errorMessage); // Hiển thị toast lỗi
     } finally {
       setLoading(false);
     }
   };
 
-  const reset = () => {
-    setLoading(false);
-    setError(null);
-    setSuccess(false);
-  };
-
-  return { deleteRequest, loading, error, success, reset };
+  return { deleteRequest, loading };
 };
 
 export default useDeleteRequest;

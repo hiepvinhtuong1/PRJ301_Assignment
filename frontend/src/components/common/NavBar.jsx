@@ -6,7 +6,7 @@ const NavBar = () => {
   const [showMenu, setShowMenu] = useState(false);
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark mb-5">
+    <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
       <div className="container-fluid">
         <Link className="navbar-brand" to={"/"}>
           LEAVE MANAGEMENT

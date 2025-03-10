@@ -1,12 +1,146 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import "bootstrap/dist/css/bootstrap.min.css";
+import {
+  Table,
+  Input,
+  DatePicker,
+  Select,
+  Button,
+  Modal,
+  Form,
+  Space,
+  Spin,
+  Pagination,
+} from "antd";
 import { FaEye, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
-import { Modal, Button } from "react-bootstrap";
 import useLeaveRequests from "../../hooks/useLeaveRequests";
 import useCreateLeaveRequest from "../../hooks/useCreateLeaveRequest";
 import useUpdateRequest from "../../hooks/useUpdateLeaveRequest";
 import useDeleteRequest from "../../hooks/useDeleteLeaveRequest";
+import usePagination from "../../hooks/usePagination";
+import styled from "styled-components";
+
+const { Option } = Select;
+const { TextArea } = Input;
+
+const StyledContainer = styled.div`
+  padding: 24px;
+  background: #f5f5f5;
+  min-height: 100vh;
+
+  h2 {
+    color: #2e8b57;
+    font-weight: 600;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+`;
+
+const StyledTable = styled(Table)`
+  .ant-table-thead > tr > th {
+    background: #2e8b57;
+    color: white;
+    font-weight: 600;
+    border-bottom: 2px solid #cccccc;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .ant-table-tbody > tr:nth-child(even) {
+    background-color: #ffffff;
+  }
+
+  .ant-table-tbody > tr:nth-child(odd) {
+    background-color: #e0e0e0;
+  }
+
+  .ant-table-tbody > tr:hover > td {
+    background: #f0f0f0;
+  }
+
+  .ant-table-cell {
+    padding: 12px !important;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+`;
+
+const FilterPanel = styled.div`
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f0f0f0;
+  border-radius: 8px;
+  border: 1px solid #cccccc;
+`;
+
+const StyledButton = styled(Button)`
+  padding: 0 24px;
+  height: 40px;
+  border-radius: 6px;
+  font-weight: 500;
+  background: #3cb371;
+  border-color: #3cb371;
+  color: white;
+
+  &:hover {
+    background: #2e8b57 !important;
+    border-color: #2e8b57 !important;
+  }
+
+  &:disabled {
+    background: #a9a9a9;
+    border-color: #a9a9a9;
+    color: #ffffff;
+  }
+`;
+
+const AddButton = styled(Button)`
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #3cb371;
+  border: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  &:hover {
+    background: #2e8b57;
+  }
+`;
+
+const ModalStyled = styled(Modal)`
+  .ant-modal-content {
+    border-radius: 10px;
+    border: 1px solid #cccccc;
+  }
+  .ant-modal-header {
+    background: #2e8b57;
+    color: white;
+    border-bottom: 1px solid #cccccc;
+  }
+  .ant-modal-body {
+    padding: 20px;
+  }
+  .ant-form-item-label > label {
+    font-weight: 500;
+    color: #333333;
+  }
+  .ant-input,
+  .ant-input-textarea {
+    border-radius: 6px;
+    border-color: #2e8b57;
+  }
+`;
 
 const LeaveRequestList = () => {
   const navigate = useNavigate();
@@ -31,8 +165,14 @@ const LeaveRequestList = () => {
 
   const [filters, setFilters] = useState(getParamsFromUrl().filters);
   const [pagination, setPagination] = useState(getParamsFromUrl().pagination);
-  const { requests, totalPages, loading, error, fetchLeaveRequests } =
-    useLeaveRequests();
+  const {
+    requests,
+    totalPages,
+    totalElements,
+    loading,
+    error,
+    fetchLeaveRequests,
+  } = useLeaveRequests();
 
   const updateUrl = (newFilters, newPagination, id = null) => {
     const params = new URLSearchParams();
@@ -68,7 +208,11 @@ const LeaveRequestList = () => {
     updateUrl(filters, newPagination);
   };
 
-  const handlePageChange = (newPagination) => {
+  const handlePageChange = (newPage) => {
+    const newPagination = {
+      current: newPage,
+      pageSize: pagination.pageSize,
+    };
     setPagination(newPagination);
     updateUrl(filters, newPagination);
   };
@@ -84,17 +228,14 @@ const LeaveRequestList = () => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [editId, setEditId] = useState(null);
 
-  // Sử dụng state riêng cho create
   const {
     createLeaveRequest,
     handleChange: handleCreateChange,
-    submitCreateLeaveRequest, // Sử dụng tên mới
+    submitCreateLeaveRequest,
     loading: createLoading,
     error: createError,
-    reset: resetCreate,
   } = useCreateLeaveRequest();
 
-  // Sử dụng state riêng cho update
   const {
     updateLeaveRequest,
     handleChange: handleUpdateChange,
@@ -102,33 +243,21 @@ const LeaveRequestList = () => {
     loading: updateLoading,
     error: updateError,
     success: updateSuccess,
-    reset: resetUpdate,
   } = useUpdateRequest();
 
-  // Sử dụng hook để xóa
-  const {
-    deleteRequest,
-    loading: deleteLoading,
-    error: deleteError,
-    success: deleteSuccess,
-    reset: resetDelete,
-  } = useDeleteRequest();
+  const { deleteRequest, loading: deleteLoading } = useDeleteRequest();
 
-  const handleCreateSubmit = (e) => {
-    e.preventDefault();
+  const handleCreateSubmit = () => {
     submitCreateLeaveRequest(() => {
-      // Sử dụng tên mới
       setShowCreateModal(false);
       const newPagination = { ...pagination, current: 1 };
       setPagination(newPagination);
       updateUrl(filters, newPagination);
       fetchLeaveRequests(filters, 1, newPagination.pageSize);
-      resetCreate();
     });
   };
 
-  const handleUpdateSubmit = (e) => {
-    e.preventDefault();
+  const handleUpdateSubmit = () => {
     updateRequest(editId, () => {
       setShowUpdateModal(false);
       const newPagination = { ...pagination, current: 1 };
@@ -136,12 +265,10 @@ const LeaveRequestList = () => {
       updateUrl(filters, newPagination, editId);
       fetchLeaveRequests(filters, 1, newPagination.pageSize);
       setEditId(null);
-      resetUpdate();
     });
   };
 
   const handleEditClick = (request) => {
-    console.log("Editing request:", request);
     setEditId(request?.id);
     updateLeaveRequest.title = request.title;
     updateLeaveRequest.reason = request.reason;
@@ -151,338 +278,444 @@ const LeaveRequestList = () => {
   };
 
   const handleDeleteClick = (id) => {
-    if (window.confirm("Are you sure you want to delete this leave request?")) {
-      deleteRequest(id, () => {
-        // Sau khi xóa thành công, giữ nguyên trang hiện tại và làm mới danh sách
-        const newPagination = { ...pagination }; // Giữ nguyên current
-        setPagination(newPagination);
-        updateUrl(filters, newPagination); // Không đẩy id lên URL
-        fetchLeaveRequests(filters, pagination.current, newPagination.pageSize);
-        resetDelete();
-      });
-    }
+    Modal.confirm({
+      title: "Are you sure you want to delete this leave request?",
+      onOk: () => {
+        deleteRequest(id, () => {
+          const newPagination = { ...pagination };
+          setPagination(newPagination);
+          updateUrl(filters, newPagination);
+          fetchLeaveRequests(
+            filters,
+            pagination.current,
+            newPagination.pageSize
+          );
+        });
+      },
+    });
   };
 
+  const { renderPaginationItems } = usePagination({
+    pagination,
+    totalPages,
+    totalElements,
+    loading,
+    onPageChange: handlePageChange,
+  });
+
+  const columns = [
+    {
+      title: "#",
+      dataIndex: "index",
+      key: "index",
+      width: "5%",
+      align: "center",
+      render: (text, record, index) =>
+        (pagination.current - 1) * pagination.pageSize + index + 1,
+    },
+    {
+      title: "Title",
+      dataIndex: "title",
+      key: "title",
+      width: "10%",
+      align: "center",
+    },
+    {
+      title: "Start Date",
+      dataIndex: "startDate",
+      key: "startDate",
+      width: "10%",
+      align: "center",
+    },
+    {
+      title: "End Date",
+      dataIndex: "endDate",
+      key: "endDate",
+      width: "10%",
+      align: "center",
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      width: "10%",
+      align: "center",
+    },
+    {
+      title: "Comment",
+      dataIndex: "comment",
+      key: "comment",
+      width: "15%",
+      align: "center",
+    },
+    {
+      title: "Processor",
+      dataIndex: "processor",
+      key: "processor",
+      width: "10%",
+      align: "center",
+      render: (processor) => processor?.fullName || "N/A",
+    },
+    {
+      title: "Reason",
+      key: "reason",
+      width: "15%",
+      align: "center",
+      render: (record) => (
+        <Button
+          type="link"
+          onClick={() => handleShowModal("Reason Details", record.reason)}
+        >
+          <FaEye /> View Reason
+        </Button>
+      ),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: "15%",
+      align: "center",
+      render: (record) => (
+        <Space>
+          <Button
+            type="primary"
+            icon={<FaEdit />}
+            onClick={() => handleEditClick(record)}
+          />
+          <Button
+            danger
+            icon={<FaTrash />}
+            onClick={() => handleDeleteClick(record.id)}
+            disabled={deleteLoading}
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  const tableData = requests.map((request) => ({
+    key: request.id,
+    id: request.id,
+    title: request.title,
+    startDate: request.startDate,
+    endDate: request.endDate,
+    status: request.status,
+    comment: request.comment,
+    processor: request.processor,
+    reason: request.reason,
+  }));
+
   return (
-    <div className="container mt-4">
+    <StyledContainer>
       <h2>Leave Request List</h2>
-      <div className="row mb-3">
-        <div className="col-md-3">
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Search..."
-            value={filters.searchText}
-            onChange={(e) =>
-              setFilters({ ...filters, searchText: e.target.value })
-            }
-          />
-        </div>
-        <div className="col-md-3">
-          <input
-            type="date"
-            className="form-control"
-            value={filters.startDate}
-            onChange={(e) =>
-              setFilters({ ...filters, startDate: e.target.value })
-            }
-          />
-        </div>
-        <div className="col-md-3">
-          <input
-            type="date"
-            className="form-control"
-            value={filters.endDate}
-            onChange={(e) =>
-              setFilters({ ...filters, endDate: e.target.value })
-            }
-          />
-        </div>
-        <div className="col-md-3">
-          <select
-            className="form-control"
-            value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          >
-            <option value="">All Status</option>
-            <option value="Approved">Approved</option>
-            <option value="Pending">Pending</option>
-            <option value="Rejected">Rejected</option>
-          </select>
-        </div>
-      </div>
-      <div className="row mb-3">
-        <div className="col">
-          <Button variant="primary" onClick={handleSearch} disabled={loading}>
-            {loading ? "Searching..." : "Search"}
-          </Button>
-        </div>
-      </div>
-      {error && <div className="alert alert-danger">{error}</div>}
-      <table className="table table-striped table-bordered text-wrap">
-        <thead className="thead-dark">
-          <tr>
-            <th style={{ width: "5%" }}>#</th>
-            <th style={{ width: "10%" }}>Title</th>
-            <th style={{ width: "10%" }}>Start Date</th>
-            <th style={{ width: "10%" }}>End Date</th>
-            <th style={{ width: "10%" }}>Status</th>
-            <th style={{ width: "15%" }}>Comment</th>
-            <th style={{ width: "10%" }}>Processor</th>
-            <th style={{ width: "15%" }}>Reason</th>
-            <th style={{ width: "15%" }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {requests.map((request, index) => (
-            <tr key={request.id}>
-              <td>
-                {(pagination.current - 1) * pagination.pageSize + index + 1}
-              </td>
-              <td>{request.title}</td>
-              <td>{request.startDate}</td>
-              <td>{request.endDate}</td>
-              <td>{request.status}</td>
-              <td>{request.comment}</td>
-              <td>{request.processor?.name || "N/A"}</td>
-              <td>
-                <Button
-                  variant="link"
-                  onClick={() =>
-                    handleShowModal("Reason Details", request.reason)
-                  }
-                >
-                  View Reason
-                </Button>
-              </td>
-              <td>
-                <button
-                  onClick={() => handleEditClick(request)}
-                  className="btn btn-warning btn-sm me-2"
-                >
-                  <FaEdit />
-                </button>
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => handleDeleteClick(request.id)}
-                  disabled={deleteLoading}
-                >
-                  <FaTrash />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <FilterPanel>
+        <Input
+          placeholder="Search..."
+          value={filters.searchText}
+          onChange={(e) =>
+            setFilters({ ...filters, searchText: e.target.value })
+          }
+          style={{
+            width: "200px",
+            borderRadius: "6px",
+            borderColor: "#2e8b57",
+          }}
+        />
+        <DatePicker
+          value={filters.startDate ? new Date(filters.startDate) : null}
+          onChange={(date, dateString) =>
+            setFilters({ ...filters, startDate: dateString })
+          }
+          style={{
+            width: "200px",
+            borderRadius: "6px",
+            borderColor: "#2e8b57",
+          }}
+        />
+        <DatePicker
+          value={filters.endDate ? new Date(filters.endDate) : null}
+          onChange={(date, dateString) =>
+            setFilters({ ...filters, endDate: dateString })
+          }
+          style={{
+            width: "200px",
+            borderRadius: "6px",
+            borderColor: "#2e8b57",
+          }}
+        />
+        <Select
+          value={filters.status}
+          onChange={(value) => setFilters({ ...filters, status: value })}
+          style={{
+            width: "200px",
+            borderRadius: "6px",
+            borderColor: "#2e8b57",
+          }}
+        >
+          <Option value="">All Status</Option>
+          <Option value="Approved">Approved</Option>
+          <Option value="Pending">Pending</Option>
+          <Option value="Rejected">Rejected</Option>
+        </Select>
+        <StyledButton onClick={handleSearch} disabled={loading}>
+          {loading ? <Spin size="small" /> : "Search"}
+        </StyledButton>
+      </FilterPanel>
+      {error && (
+        <p
+          style={{
+            color: "#ff4500",
+            textAlign: "center",
+            marginBottom: "16px",
+          }}
+        >
+          Lỗi: {error}
+        </p>
+      )}
+      <StyledTable
+        columns={columns}
+        dataSource={tableData}
+        pagination={false}
+        scroll={{ x: "max-content", y: "calc(100vh - 300px)" }}
+        loading={loading}
+        bordered
+      />
 
       <div className="d-flex justify-content-center mt-3">
-        <Button
-          variant="outline-primary"
-          disabled={pagination.current === 1 || loading}
-          onClick={() =>
-            handlePageChange({ ...pagination, current: pagination.current - 1 })
-          }
-        >
-          Previous
-        </Button>
-        <span className="mx-3">
-          Page {pagination.current} of {totalPages}
-        </span>
-        <Button
-          variant="outline-primary"
-          disabled={pagination.current === totalPages || loading}
-          onClick={() =>
-            handlePageChange({ ...pagination, current: pagination.current + 1 })
-          }
-        >
-          Next
-        </Button>
+        <Pagination>{renderPaginationItems()}</Pagination>
       </div>
 
-      <div className="position-fixed bottom-0 end-0 p-4">
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          className="btn btn-success btn-lg rounded-circle d-flex align-items-center justify-content-center shadow"
-          style={{ width: "60px", height: "60px" }}
-        >
-          <FaPlus size={30} />
-        </Button>
-      </div>
+      <AddButton
+        onClick={() => setShowCreateModal(true)}
+        disabled={createLoading}
+      >
+        <FaPlus size={30} />
+      </AddButton>
 
-      {/* Modal cho View Reason */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>{modalContent.title}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <div
-            style={{
-              maxHeight: "300px",
-              overflowY: "auto",
-              wordWrap: "break-word",
-            }}
-          >
-            {modalContent.content}
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
+      <ModalStyled
+        title={modalContent.title}
+        visible={showModal}
+        onCancel={() => setShowModal(false)}
+        footer={[
+          <Button key="close" onClick={() => setShowModal(false)}>
             Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
+          </Button>,
+        ]}
+      >
+        <div
+          style={{
+            maxHeight: "300px",
+            overflowY: "auto",
+            wordWrap: "break-word",
+            padding: "10px",
+            background: "#f9f9f9",
+            borderRadius: "5px",
+          }}
+        >
+          {modalContent.content}
+        </div>
+      </ModalStyled>
 
-      {/* Modal cho Create */}
-      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Request Leave</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {createError && (
-            <div className="alert alert-danger">{createError}</div>
-          )}
-          <form onSubmit={handleCreateSubmit}>
-            <div className="mb-2">
-              <label className="form-label">Title</label>
-              <input
-                type="text"
-                className="form-control"
-                name="title"
-                value={createLeaveRequest.title}
-                onChange={handleCreateChange}
-                required
+      <ModalStyled
+        title="Request Leave"
+        visible={showCreateModal}
+        onCancel={() => setShowCreateModal(false)}
+        footer={null}
+      >
+        <Form onFinish={handleCreateSubmit}>
+          <Form.Item
+            label="Title"
+            name="title"
+            rules={[{ required: true, message: "Please enter a title" }]}
+          >
+            <Input
+              name="title"
+              value={createLeaveRequest.title}
+              onChange={(e) => handleCreateChange({ target: e.target })}
+              disabled={createLoading}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Start Date"
+            name="startDate"
+            rules={[{ required: true, message: "Please select a start date" }]}
+          >
+            <DatePicker
+              name="startDate"
+              value={
+                createLeaveRequest.startDate
+                  ? new Date(createLeaveRequest.startDate)
+                  : null
+              }
+              onChange={(date, dateString) =>
+                handleCreateChange({
+                  target: { name: "startDate", value: dateString },
+                })
+              }
+              style={{ width: "100%" }}
+              disabled={createLoading}
+            />
+          </Form.Item>
+          <Form.Item
+            label="End Date"
+            name="endDate"
+            rules={[{ required: true, message: "Please select an end date" }]}
+          >
+            <DatePicker
+              name="endDate"
+              value={
+                createLeaveRequest.endDate
+                  ? new Date(createLeaveRequest.endDate)
+                  : null
+              }
+              onChange={(date, dateString) =>
+                handleCreateChange({
+                  target: { name: "endDate", value: dateString },
+                })
+              }
+              style={{ width: "100%" }}
+              disabled={createLoading}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Reason"
+            name="reason"
+            rules={[{ required: true, message: "Please enter a reason" }]}
+          >
+            <TextArea
+              name="reason"
+              value={createLeaveRequest.reason}
+              onChange={(e) => handleCreateChange({ target: e.target })}
+              disabled={createLoading}
+              rows={4}
+            />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <StyledButton
+                type="primary"
+                htmlType="submit"
                 disabled={createLoading}
-              />
-            </div>
-            <div className="mb-2">
-              <label className="form-label">Start Date</label>
-              <input
-                type="date"
-                className="form-control"
-                name="startDate"
-                value={createLeaveRequest.startDate}
-                onChange={handleCreateChange}
-                required
-                disabled={createLoading}
-              />
-            </div>
-            <div className="mb-2">
-              <label className="form-label">End Date</label>
-              <input
-                type="date"
-                className="form-control"
-                name="endDate"
-                value={createLeaveRequest.endDate}
-                onChange={handleCreateChange}
-                required
-                disabled={createLoading}
-              />
-            </div>
-            <div className="mb-2">
-              <label className="form-label">Reason</label>
-              <textarea
-                className="form-control"
-                name="reason"
-                value={createLeaveRequest.reason}
-                onChange={handleCreateChange}
-                required
-                disabled={createLoading}
-              ></textarea>
-            </div>
-            <div className="d-flex justify-content-between mt-3">
-              <Button type="submit" variant="primary" disabled={createLoading}>
+              >
                 {createLoading ? "Submitting..." : "Submit"}
-              </Button>
+              </StyledButton>
               <Button
-                variant="danger"
                 onClick={() => setShowCreateModal(false)}
                 disabled={createLoading}
               >
                 Cancel
               </Button>
-            </div>
-          </form>
-        </Modal.Body>
-      </Modal>
+            </Space>
+          </Form.Item>
+        </Form>
+      </ModalStyled>
 
-      {/* Modal cho Update */}
-      <Modal show={showUpdateModal} onHide={() => setShowUpdateModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Leave Request</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {updateError && (
-            <div className="alert alert-danger">{updateError}</div>
-          )}
-          {updateSuccess && (
-            <div className="alert alert-success">
-              Leave request updated successfully!
-            </div>
-          )}
-          <form onSubmit={handleUpdateSubmit}>
-            <div className="mb-2">
-              <label className="form-label">Title</label>
-              <input
-                type="text"
-                className="form-control"
-                name="title"
-                value={updateLeaveRequest.title}
-                onChange={handleUpdateChange}
-                required
+      <ModalStyled
+        title="Edit Leave Request"
+        visible={showUpdateModal}
+        onCancel={() => setShowUpdateModal(false)}
+        footer={null}
+      >
+        <Form onFinish={handleUpdateSubmit}>
+          <Form.Item
+            label="Title"
+            name="title"
+            rules={[{ required: true, message: "Please enter a title" }]}
+            initialValue={updateLeaveRequest.title}
+          >
+            <Input
+              name="title"
+              value={updateLeaveRequest.title}
+              onChange={(e) => handleUpdateChange({ target: e.target })}
+              disabled={updateLoading}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Start Date"
+            name="startDate"
+            rules={[{ required: true, message: "Please select a start date" }]}
+            initialValue={
+              updateLeaveRequest.startDate
+                ? new Date(updateLeaveRequest.startDate)
+                : null
+            }
+          >
+            <DatePicker
+              name="startDate"
+              value={
+                updateLeaveRequest.startDate
+                  ? new Date(updateLeaveRequest.startDate)
+                  : null
+              }
+              onChange={(date, dateString) =>
+                handleUpdateChange({
+                  target: { name: "startDate", value: dateString },
+                })
+              }
+              style={{ width: "100%" }}
+              disabled={updateLoading}
+            />
+          </Form.Item>
+          <Form.Item
+            label="End Date"
+            name="endDate"
+            rules={[{ required: true, message: "Please select an end date" }]}
+            initialValue={
+              updateLeaveRequest.endDate
+                ? new Date(updateLeaveRequest.endDate)
+                : null
+            }
+          >
+            <DatePicker
+              name="endDate"
+              value={
+                updateLeaveRequest.endDate
+                  ? new Date(updateLeaveRequest.endDate)
+                  : null
+              }
+              onChange={(date, dateString) =>
+                handleUpdateChange({
+                  target: { name: "endDate", value: dateString },
+                })
+              }
+              style={{ width: "100%" }}
+              disabled={updateLoading}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Reason"
+            name="reason"
+            rules={[{ required: true, message: "Please enter a reason" }]}
+            initialValue={updateLeaveRequest.reason}
+          >
+            <TextArea
+              name="reason"
+              value={updateLeaveRequest.reason}
+              onChange={(e) => handleUpdateChange({ target: e.target })}
+              disabled={updateLoading}
+              rows={4}
+            />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <StyledButton
+                type="primary"
+                htmlType="submit"
                 disabled={updateLoading}
-              />
-            </div>
-            <div className="mb-2">
-              <label className="form-label">Start Date</label>
-              <input
-                type="date"
-                className="form-control"
-                name="startDate"
-                value={updateLeaveRequest.startDate}
-                onChange={handleUpdateChange}
-                required
-                disabled={updateLoading}
-              />
-            </div>
-            <div className="mb-2">
-              <label className="form-label">End Date</label>
-              <input
-                type="date"
-                className="form-control"
-                name="endDate"
-                value={updateLeaveRequest.endDate}
-                onChange={handleUpdateChange}
-                required
-                disabled={updateLoading}
-              />
-            </div>
-            <div className="mb-2">
-              <label className="form-label">Reason</label>
-              <textarea
-                className="form-control"
-                name="reason"
-                value={updateLeaveRequest.reason}
-                onChange={handleUpdateChange}
-                required
-                disabled={updateLoading}
-              ></textarea>
-            </div>
-            <div className="d-flex justify-content-between mt-3">
-              <Button type="submit" variant="primary" disabled={updateLoading}>
+              >
                 {updateLoading ? "Updating..." : "Update"}
-              </Button>
+              </StyledButton>
               <Button
-                variant="danger"
                 onClick={() => setShowUpdateModal(false)}
                 disabled={updateLoading}
               >
                 Cancel
               </Button>
-            </div>
-          </form>
-        </Modal.Body>
-      </Modal>
-    </div>
+            </Space>
+          </Form.Item>
+        </Form>
+      </ModalStyled>
+    </StyledContainer>
   );
 };
 

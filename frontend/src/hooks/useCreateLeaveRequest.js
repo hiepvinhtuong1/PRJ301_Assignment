@@ -1,5 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
+import apiClient from "../utils/apiClient";
+import { showErrorToast, showSuccessToast } from "../utils/toastUtils"; // Import toast utils
 
 const useCreateLeaveRequest = () => {
   const [createLeaveRequest, setCreateLeaveRequest] = useState({
@@ -20,16 +21,7 @@ const useCreateLeaveRequest = () => {
     setError(null);
     try {
       console.log("Data before sending:", createLeaveRequest);
-      const response = await axios.post(
-        "http://localhost:8081/hiep/leave-requests",
-        createLeaveRequest,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("TOKEN")}`,
-            "Content-Type": "application/json; charset=utf-8",
-          },
-        }
-      );
+      const response = await apiClient.post("/leave-requests", createLeaveRequest);
 
       console.log("Leave request created successfully:", response.data);
       setCreateLeaveRequest({
@@ -39,34 +31,24 @@ const useCreateLeaveRequest = () => {
         reason: "",
       });
 
+      showSuccessToast("Leave request created successfully! 🎉"); // Hiển thị toast thành công
+
       if (onSuccess) onSuccess();
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Failed to create leave request. Please try again.";
       setError(errorMessage);
-      console.error("Error creating leave request:", err);
+      showErrorToast(errorMessage); // Hiển thị toast lỗi
     } finally {
       setLoading(false);
     }
   };
 
-  const reset = () => {
-    setCreateLeaveRequest({
-      title: "",
-      startDate: "",
-      endDate: "",
-      reason: "",
-    });
-    setError(null);
-    setLoading(false);
-  };
-
   return {
     createLeaveRequest,
     handleChange,
-    submitCreateLeaveRequest, // Đổi tên để tránh trùng
+    submitCreateLeaveRequest,
     loading,
     error,
-    reset
   };
 };
 
